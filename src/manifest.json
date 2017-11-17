@@ -1,0 +1,17 @@
+{
+  "manifest_version": 2,
+  "name": "Topovica",
+  "version": "0.1",
+
+  "description": "Reimplements the parts of vimperator that I care about",
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["scripts/topovica-content.js"]
+    }
+  ],
+  "background": {
+    "scripts": ["scripts/topovica-bg.js"]
+  }
+}
