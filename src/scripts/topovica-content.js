@@ -20,9 +20,13 @@
 		return firstfn;
 	}
 
+	var shifted = false,
+		altered = false,
+		controlled = false;
+
+	// start chain functions
 	var firstfn = null,
 		gunit = null;
-
 	// create a chain function
 	function chainlink(actions){
 		return function(c){
@@ -35,7 +39,6 @@
 		};
 	}
 
-	// start chain functions
 	firstfn = chainlink({
 		// basic movements
 		"h": function(){ return move([-100,0]); }, // left
@@ -49,7 +52,6 @@
 	// function dealing with "g" possible completions are "^", "$", "g", "t" and "T"
 	gunit = chainlink({
 		"g": function(){ window.scrollTo(0,0); return firstfn; },
-		"Shift": function(){ return gunit; }
 	});
 	// end chain functions
 
@@ -69,12 +71,23 @@
 		debug(evt.key);
 
 		var c = evt.key;
+		var mods = {
+			"Shift": function(){ shifted = true; },
+			"Alt": function(){ altered = true; },
+			"Control": function(){ controlled = true; }
+		};
 
 		// ESC resets immediately
 		if(c=="Escape"){
 			if(mode==modes.insert) mode = modes.command;
 			next = firstfn;
 			kunext = null;
+			return;
+		}
+
+		// handle modifier keys
+		if(c in mods){
+			mods[c]();
 			return;
 		}
 
@@ -85,7 +98,18 @@
 	}
 
 	// keyup handler
-	function ku(evt){ }
+	function ku(evt){
+		var c = evt.key;
+		var mods = {
+			"Shift": function(){ shifted = false; },
+			"Alt": function(){ altered = false; },
+			"Control": function(){ controlled = false; }
+		};
+		if(c in mods){
+			debug(c + " released");
+			mods[c]();
+		}
+	}
 
 	window.addEventListener("keydown", kd)
 	window.addEventListener("keyup", ku)
