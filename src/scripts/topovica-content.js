@@ -20,6 +20,13 @@
 		return firstfn;
 	}
 
+	// send message to background script
+	function browser_command(){
+		var cmd = {"command": arguments[0], "args":null};
+		if(arguments.length>1) cmd.args = arguments[1];
+		setTimeout(browser.runtime.sendMessage, 1, cmd);
+	}
+
 	var shifted = false,
 		altered = false,
 		controlled = false;
@@ -52,6 +59,10 @@
 	// function dealing with "g" possible completions are "^", "$", "g", "t" and "T"
 	gunit = chainlink({
 		"g": function(){ window.scrollTo(0,0); return firstfn; },
+		"t": function(){ browser_command("gt"); return firstfn; },
+		"T": function(){ browser_command("gT"); return firstfn; },
+		"^": function(){ browser_command("g^"); return firstfn; },
+		"$": function(){ browser_command("g$"); return firstfn; }
 	});
 	// end chain functions
 
