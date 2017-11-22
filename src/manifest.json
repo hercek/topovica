@@ -14,5 +14,5 @@
   "background": {
     "scripts": ["scripts/topovica-bg.js"]
   },
-  "permissions": ["tabs"]
+  "permissions": ["tabs","sessions"]
 }

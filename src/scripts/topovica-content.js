@@ -53,7 +53,10 @@
 		"k": function(){ return move([0,-50]); }, // up
 		"l": function(){ return move([100,0]); }, // right
 		// gt, gT, g$, g^, gg
-		"g": function(){ return gunit; }
+		"g": function(){ return gunit; },
+		// delete and undo
+		"d": function(){ browser_command("d"); return firstfn; },
+		"u": function(){ browser_command("u"); return firstfn; }
 	});
 
 	// function dealing with "g" possible completions are "^", "$", "g", "t" and "T"

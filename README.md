@@ -15,3 +15,8 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 #### Tab movements
 
 `gt`, `gT`, `g^`, `g$` &rarr; next tab, previous tab, first tab, last tab, respectively
+
+#### Tab creation/deletion
+
+`d` &rarr; delete: close tab
+`u` &rarr; undo: restore most recently closed tab
