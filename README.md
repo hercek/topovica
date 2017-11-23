@@ -10,7 +10,7 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `h`,`j`,`k`,`l` &rarr; left, down, up and right, respectively 
 
-`gg` &rarr; top of page
+`gg`, `G` &rarr; top of page, bottom of page
 
 #### Tab movements
 
@@ -20,3 +20,7 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `d` &rarr; delete: close tab
 `u` &rarr; undo: restore most recently closed tab
+
+### Insert mode
+
+We now detect insert mode when currently focused element is `input`, `textarea` or `select`.

@@ -11,12 +11,27 @@
 	var DEBUG = true;
 	var modes = {"command":0,"insert":1}, mode = modes.command;
 
-	// focused element
-	var focused = window;
+	var focd = null;
+
+	var fint = null;
+
+	function checkFocus(){
+		var inserttags = {"SELECT":true, "TEXTAREA":true, "INPUT":true};
+		// idempotence ftw.
+		if(fint){
+			clearInterval(fint);
+		}
+		fint = window.setInterval(function(){
+			var curr = document.activeElement;
+			if(focd==curr) return;
+			focd = curr;
+			if(focd.tagName in inserttags) mode = modes.insert;
+		}, 20);
+	}
 
 	// movement function. "by" is an array specifying x and y offsets to scroll by
 	function move(by){
-		focused.scrollBy.apply(focused, by);
+		window.scrollBy.apply(window, by);
 		return firstfn;
 	}
 
@@ -54,6 +69,11 @@
 		"l": function(){ return move([100,0]); }, // right
 		// gt, gT, g$, g^, gg
 		"g": function(){ return gunit; },
+		// G
+		"G": function(){
+			var limit = Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight) - window.innerHeight;
+			return move([0,limit]);
+		},
 		// delete and undo
 		"d": function(){ browser_command("d"); return firstfn; },
 		"u": function(){ browser_command("u"); return firstfn; }
@@ -93,7 +113,12 @@
 
 		// ESC resets immediately
 		if(c=="Escape"){
-			if(mode==modes.insert) mode = modes.command;
+			if(mode==modes.insert){
+				mode = modes.command;
+				// blur from insert element
+				el = document.activeElement;
+				el.blur();
+			}
 			next = firstfn;
 			kunext = null;
 			return;
@@ -125,6 +150,10 @@
 		}
 	}
 
-	window.addEventListener("keydown", kd)
-	window.addEventListener("keyup", ku)
+	window.addEventListener("keydown", kd);
+	window.addEventListener("keyup", ku);
+	// if this window is focused we need to check if focus is on an input element
+	window.addEventListener("focus", checkFocus);
+	// on blur, we stop checking focus
+	window.addEventListener("blur", function(){ if(fint!=null){ clearInterval(fint); fint=null; }});
 })();
