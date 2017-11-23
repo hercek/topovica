@@ -8,8 +8,16 @@
 	if(window.hasRun) return;
 	window.hasRun = true;
 
+	// declare chain functions
+	var firstfn = null,
+		gunit = null;
+
 	var DEBUG = true;
 	var modes = {"command":0,"insert":1}, mode = modes.command;
+	//
+	// ":" variables
+	var currcmd = "",
+		btm_elem = null;
 
 	var focd = null;
 
@@ -29,6 +37,33 @@
 		}, 20);
 	}
 
+	// ":" functions start
+	function updatebtm(){
+		btm_elem.innerHTML = currcmd;
+	}
+
+	function unedit(){
+		currcmd = "";
+		updatebtm();
+		btm_elem.style.display = "none";
+	}
+
+	function edit(c){
+		// execute command
+		if(c=="Enter"){
+			debug(currcmd);
+			unedit();
+			return firstfn;
+		} else if(c=="Backspace"){
+			currcmd = currcmd.slice(0,-1);
+		} else {
+			currcmd += c;
+		}
+		updatebtm();
+		return edit;
+	}
+	// ":" functions end
+
 	// movement function. "by" is an array specifying x and y offsets to scroll by
 	function move(by){
 		window.scrollBy.apply(window, by);
@@ -46,9 +81,6 @@
 		altered = false,
 		controlled = false;
 
-	// start chain functions
-	var firstfn = null,
-		gunit = null;
 	// create a chain function
 	function chainlink(actions){
 		return function(c){
@@ -62,6 +94,8 @@
 	}
 
 	firstfn = chainlink({
+		// input commands
+		":": function(){ btm_elem.style.display = "block"; return edit(":"); },
 		// basic movements
 		"h": function(){ return move([-100,0]); }, // left
 		"j": function(){ return move([0,50]); }, // down
@@ -118,6 +152,7 @@
 				// blur from insert element
 				el = document.activeElement;
 				el.blur();
+				unedit();
 			}
 			next = firstfn;
 			kunext = null;
@@ -149,6 +184,20 @@
 			mods[c]();
 		}
 	}
+
+	// add topovicabtm div
+	function add_btm(){
+		if(document.getElementById("topovicabtm")) return;
+		var node = document.createElement("DIV");
+		node.id = "topovicabtm";
+		node.style.bottom = "0";
+		node.style.position = "fixed";
+		node.style.display = "none";
+		btm_elem = node;
+		document.getElementsByTagName("body")[0].appendChild(node);
+	};
+
+	add_btm();
 
 	window.addEventListener("keydown", kd);
 	window.addEventListener("keyup", ku);
