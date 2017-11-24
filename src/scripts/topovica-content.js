@@ -188,13 +188,12 @@
 	// add topovicabtm div
 	function add_btm(){
 		if(document.getElementById("topovicabtm")) return;
-		var node = document.createElement("DIV");
-		node.id = "topovicabtm";
-		node.style.bottom = "0";
-		node.style.position = "fixed";
-		node.style.display = "none";
-		btm_elem = node;
-		document.getElementsByTagName("body")[0].appendChild(node);
+		var btmdiv = document.createElement("DIV");
+		btmdiv.id = "topovicabtm";
+		var dstyle = {color:"green",bottom: "0", position:"fixed", display:"none", backgroundColor:"black"};
+		for(var k in dstyle) btmdiv.style[k] = dstyle[k];
+		btm_elem = btmdiv;
+		document.getElementsByTagName("body")[0].appendChild(btmdiv);
 	};
 
 	add_btm();
