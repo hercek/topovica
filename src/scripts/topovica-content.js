@@ -51,10 +51,21 @@
 	}
 
 	function exec_edit(){
-		var cmd = btm_input.value;
+		var cmd = btm_input.value.replace(/^:/,"").split(" ");
 		uninsert();
 		unedit();
-		debug(cmd);
+		// do something
+		var colons = {
+			"o": opener,
+			"open": opener,
+		};
+		if(!(cmd[0] in colons)) return;
+
+		colons[cmd[0]].apply(null, cmd.slice(1, cmd.length));
+	}
+
+	function opener(){
+		window.location.href = Array.prototype.slice.call(arguments).join(arguments);
 	}
 	// ":" functions end
 
@@ -128,6 +139,7 @@
 		console.log.apply(undefined, arguments);
 	}
 
+	// goes back to command mode
 	function uninsert(){
 		mode = modes.command;
 		// blur from insert element
@@ -189,7 +201,7 @@
 		if(document.getElementById("topovicabtm")) return;
 		btm_elem = document.createElement("DIV");
 		btm_elem.id = "topovicabtm";
-		var styletmp = {color:"green",bottom: "0", position:"fixed", width:"100%", display:"none", backgroundColor:"black"};
+		var styletmp = {zIndex: "10000", bottom: "0", position:"fixed", width:"100%", display:"none", "color":"red"};
 		for(var k in styletmp) btm_elem.style[k] = styletmp[k];
 		document.getElementsByTagName("body")[0].appendChild(btm_elem);
 		add_btm_input();
@@ -200,16 +212,18 @@
 		// add the input element to topovicabtm
 		btm_input = document.createElement("INPUT");
 		btm_input.id = "tpvcbtm_input";
-		styletmp = {color:"green", backgroundColor:"black", width:"100%"};
+		styletmp = {outlineStyle:"none", width:"100%", "color":"red"};
 		for(var k in styletmp) btm_input.style[k] = styletmp[k];
 		btm_input.addEventListener("focus", function(evt){
-			evt.style.outline = "none";
+			evt.target.style.outline = "0px none black";
 		});
 		btm_input.addEventListener("keydown", function(evt){
 			var c = evt.key;
 			if(c!="Enter") return;
 			exec_edit();
 		});
+		//TODO: implement autocomplete maybe, sometime.
+		btm_input.addEventListener("change", function(evt){});
 		btm_elem.appendChild(btm_input);
 	}
 
