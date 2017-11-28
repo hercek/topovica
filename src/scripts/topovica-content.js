@@ -16,8 +16,8 @@
 	var modes = {"command":0,"insert":1}, mode = modes.command;
 	//
 	// ":" variables
-	var currcmd = "",
-		btm_elem = null;
+	var btm_elem = null,
+		btm_input = null;
 
 	var focd = null;
 
@@ -37,30 +37,24 @@
 		}, 20);
 	}
 
-	// ":" functions start
-	function updatebtm(){
-		btm_elem.innerHTML = currcmd;
-	}
-
+	// ":" functions begin
 	function unedit(){
-		currcmd = "";
-		updatebtm();
+		btm_input.value = "";
 		btm_elem.style.display = "none";
 	}
+	
+	function edit(){
+		add_btm();
+		btm_elem.style.display = "block";
+		btm_input.focus();
+		return firstfn;
+	}
 
-	function edit(c){
-		// execute command
-		if(c=="Enter"){
-			debug(currcmd);
-			unedit();
-			return firstfn;
-		} else if(c=="Backspace"){
-			currcmd = currcmd.slice(0,-1);
-		} else {
-			currcmd += c;
-		}
-		updatebtm();
-		return edit;
+	function exec_edit(){
+		var cmd = btm_input.value;
+		uninsert();
+		unedit();
+		debug(cmd);
 	}
 	// ":" functions end
 
@@ -95,7 +89,7 @@
 
 	firstfn = chainlink({
 		// input commands
-		":": function(){ btm_elem.style.display = "block"; return edit(":"); },
+		":": function(){ return edit(":"); },
 		// basic movements
 		"h": function(){ return move([-100,0]); }, // left
 		"j": function(){ return move([0,50]); }, // down
@@ -134,6 +128,13 @@
 		console.log.apply(undefined, arguments);
 	}
 
+	function uninsert(){
+		mode = modes.command;
+		// blur from insert element
+		el = document.activeElement;
+		el.blur();
+	}
+
 	// keydown handler
 	function kd(evt){
 		debug(evt.key);
@@ -147,11 +148,9 @@
 
 		// ESC resets immediately
 		if(c=="Escape"){
+			debug(mode);
 			if(mode==modes.insert){
-				mode = modes.command;
-				// blur from insert element
-				el = document.activeElement;
-				el.blur();
+				uninsert();
 				unedit();
 			}
 			next = firstfn;
@@ -188,16 +187,33 @@
 	// add topovicabtm div
 	function add_btm(){
 		if(document.getElementById("topovicabtm")) return;
-		var btmdiv = document.createElement("DIV");
-		btmdiv.id = "topovicabtm";
-		var dstyle = {color:"green",bottom: "0", position:"fixed", display:"none", backgroundColor:"black"};
-		for(var k in dstyle) btmdiv.style[k] = dstyle[k];
-		btm_elem = btmdiv;
-		document.getElementsByTagName("body")[0].appendChild(btmdiv);
-	};
+		btm_elem = document.createElement("DIV");
+		btm_elem.id = "topovicabtm";
+		var styletmp = {color:"green",bottom: "0", position:"fixed", width:"100%", display:"none", backgroundColor:"black"};
+		for(var k in styletmp) btm_elem.style[k] = styletmp[k];
+		document.getElementsByTagName("body")[0].appendChild(btm_elem);
+		add_btm_input();
+	}
 
-	add_btm();
+	// add bottom input
+	function add_btm_input(){
+		// add the input element to topovicabtm
+		btm_input = document.createElement("INPUT");
+		btm_input.id = "tpvcbtm_input";
+		styletmp = {color:"green", backgroundColor:"black", width:"100%"};
+		for(var k in styletmp) btm_input.style[k] = styletmp[k];
+		btm_input.addEventListener("focus", function(evt){
+			evt.style.outline = "none";
+		});
+		btm_input.addEventListener("keydown", function(evt){
+			var c = evt.key;
+			if(c!="Enter") return;
+			exec_edit();
+		});
+		btm_elem.appendChild(btm_input);
+	}
 
+	checkFocus(); // because refresh doesn't trigger focus event
 	window.addEventListener("keydown", kd);
 	window.addEventListener("keyup", ku);
 	// if this window is focused we need to check if focus is on an input element
