@@ -22,6 +22,16 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `u` &rarr; undo: restore most recently deleted tab
 
+#### Navigation
+
+`:open`, `:o` &rarr; opens a url or does a search in the current tab.
+
 ### Insert mode
 
 We now detect insert mode when currently focused element is `input`, `textarea` or `select`.
+
+## Credits
+
+I referred to existing projects when I encountered functionality I couldn't figure out how to implement.
+
+- `:open`: [vim-vixen](https://github.com/ueokande/vim-vixen)

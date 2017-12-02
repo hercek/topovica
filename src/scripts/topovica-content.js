@@ -64,29 +64,10 @@
 		colons[cmd[0]].apply(null, cmd.slice(1, cmd.length));
 	}
 
-	// opens url if it's http, https or ftp, otherwise searches google
 	function opener(){
-		var args = Array.prototype.slice.call(arguments),
-			validstarts = ["http://", "https://", "ftp://"],
-			url = args[0];
-
-		if(args.length<1) return;
-
-		// case where we don't search
-		if(args.length==1 && url.includes(".")){
-			var addhttp = true;
-			for(var i=0;i<validstarts.length;i++){
-				if(url.startsWith(validstarts[i])){
-					addhttp = false;
-					break;
-				}
-			}
-			if(addhttp) url = "http://"+url;
-			window.location.href = url;
-			return; // probably not necessary, but looks more complete
-		}
-
-		window.location.href = "https://google.com/search?q=" + args.join("+");
+		var args = ["open"];
+		for(var i=0;i<arguments.length;i++) args[i+1] = arguments[i];
+		browser_command.apply(null, args);
 	}
 	// ":" functions end
 
@@ -98,8 +79,9 @@
 
 	// send message to background script
 	function browser_command(){
-		var cmd = {"command": arguments[0], "args":null};
-		if(arguments.length>1) cmd.args = arguments[1];
+		var cmd = {"command": arguments[0], "args":null},
+			args = Array.prototype.slice.call(arguments);
+		if(args.length>1) cmd.args = args.slice(1);
 		setTimeout(browser.runtime.sendMessage, 1, cmd);
 	}
 

@@ -24,6 +24,28 @@ function tabber(target){
     q.then(gototarget, stderr);
 }
 
+function opener(tabid, args){
+    var validstarts = ["http://", "https://", "ftp://"],
+        url = args[0];
+
+    if(args.length<1) return;
+
+    // case where we don't search
+    if(args.length==1 && url.includes(".")){
+        var addhttp = true;
+        for(var i=0;i<validstarts.length;i++){
+            if(url.startsWith(validstarts[i])){
+                addhttp = false;
+                break;
+            }
+        }
+        if(addhttp) url = "http://"+url;
+    }else{
+        url = "https://google.com/search?q=" + args.join("+");
+    }
+    browser.tabs.update(tabid, {url: url});
+}
+
 // copied from mozilla
 function restoreMostRecent() {
 	browser.sessions.getRecentlyClosed({maxResults:1}).then(function(sessionInfos){
@@ -45,11 +67,12 @@ function commands_receiver(cmd, sender, rsp){
     debug(sender);
 
     var commands = {
+        "d": function(){ browser.tabs.remove(sender.tab.id); },
         "gt": function(){ tabber(sender.tab.index+1); },
         "gT": function(){ tabber(sender.tab.index-1); },
         "g^": function(){ tabber(0); },
         "g$": function(){ tabber(-1); },
-        "d": function(){ browser.tabs.remove(sender.tab.id); },
+        "open": function(){ opener(sender.tab.id, cmd.args); },
         "u": restoreMostRecent
     };
     if(cmd.command in commands){
