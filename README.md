@@ -24,7 +24,7 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 #### Navigation
 
-`:open`, `:o` &rarr; opens a url or does a search in the current tab.
+`:open`, `:o`, `o` &rarr; opens a url or does a search in the current tab.
 
 ### Insert mode
 

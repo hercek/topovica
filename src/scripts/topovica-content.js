@@ -43,10 +43,11 @@
 		btm_elem.style.display = "none";
 	}
 	
-	function edit(){
+	function edit(v){
 		add_btm();
 		btm_elem.style.display = "block";
 		btm_input.focus();
+		btm_input.value = v;
 		return firstfn;
 	}
 
@@ -102,8 +103,6 @@
 	}
 
 	firstfn = chainlink({
-		// input commands
-		":": function(){ return edit(":"); },
 		// basic movements
 		"h": function(){ return move([-100,0]); }, // left
 		"j": function(){ return move([0,50]); }, // down
@@ -189,13 +188,25 @@
 	function ku(evt){
 		var c = evt.key;
 		var mods = {
+			// end input commands
 			"Shift": function(){ shifted = false; },
 			"Alt": function(){ altered = false; },
 			"Control": function(){ controlled = false; }
 		};
+		var enteredits = {
+			// input commands need to be here cos if we use keydown, the character will be output
+			// into the input box when it keyups, i.e. we will end up with "::"
+			":": function(){ return edit(":"); },
+			"o": function(){ return edit(":open"); }
+		};
 		if(c in mods){
 			debug(c + " released");
 			mods[c]();
+		}
+
+		if(mode==modes.command && c in enteredits){
+			debug(c + " released");
+			enteredits[c]();
 		}
 	}
 
