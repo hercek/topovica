@@ -46,6 +46,27 @@ function opener(tabid, args){
     browser.tabs.update(tabid, {url: url});
 }
 
+// saves every window and exits
+function xall(){
+    browser.windows.getAll({populate:true}).then(function(warr){
+        var wins = [], active = [0,0],
+            sess = {"wins":wins, "active":active};
+        for(var i=0;i<warr.length;i++){
+            var win = [], w = warr[i];
+            if(w.focused) active[0] = i;
+            wins.push(win);
+            for(var j=0;j<w.tabs.length;j++){
+                var t = w.tabs[j];
+                win.push(t.url)
+                if(t.active) active[1] = j;
+            }
+        }
+        debug(sess);
+    }, function(err){
+        debug(`Error: ${err}`);
+    });
+}
+
 // copied from mozilla
 function restoreMostRecent() {
 	browser.sessions.getRecentlyClosed({maxResults:1}).then(function(sessionInfos){
@@ -73,6 +94,9 @@ function commands_receiver(cmd, sender, rsp){
         "g^": function(){ tabber(0); },
         "g$": function(){ tabber(-1); },
         "open": function(){ opener(sender.tab.id, cmd.args); },
+        "debug": function(){ DEBUG=true; },
+        "nodebug": function(){ DEBUG=false; },
+        "xall": xall,
         "u": restoreMostRecent
     };
     if(cmd.command in commands){

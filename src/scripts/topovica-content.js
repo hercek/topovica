@@ -58,11 +58,23 @@
 		// do something
 		var colons = {
 			"o": opener,
-			"open": opener
+			"open": opener,
+			"set": setter,
+			"xall": function(){ browser_command("xall"); }
 		};
 		if(!(cmd[0] in colons)) return;
 
 		colons[cmd[0]].apply(null, cmd.slice(1, cmd.length));
+	}
+
+	function setter(){
+		var settees = {
+			"debug": function(){ DEBUG=true; browser_command("debug"); },
+			"nodebug": function(){ DEBUG=false; browser_command("nodebug"); }
+		}
+		if(arguments[0] in settees){
+			settees[arguments[0]]();
+		}
 	}
 
 	function opener(){
