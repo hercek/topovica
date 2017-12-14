@@ -26,9 +26,11 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `:open`, `:o`, `o` &rarr; opens a url or does a search in the current tab.
 
+`CTRL-I`, `CTRL-O` &rarr; forward and back
+
 ### Insert mode
 
-We now detect insert mode when currently focused element is `input`, `textarea` or `select`.
+We currently detect insert mode when currently focused element is `input`, `textarea` or `select`.
 
 ## Credits
 

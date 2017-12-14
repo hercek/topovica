@@ -104,10 +104,10 @@
 
 	// create a chain function
 	function chainlink(actions){
-		return function(c){
+		return function(c, evt){
 			try{
 				if(c in actions){
-					return actions[c]();
+					return actions[c](evt);
 				}
 			} catch(e) {}
 			return firstfn;
@@ -129,7 +129,22 @@
 		},
 		// delete and undo
 		"d": function(){ browser_command("d"); return firstfn; },
-		"u": function(){ browser_command("u"); return firstfn; }
+		"u": function(){ browser_command("u"); return firstfn; },
+		// back and forward
+		"i": function(evt){
+			if(controlled){
+				evt.preventDefault();
+				window.history.forward();
+			}
+			return firstfn;
+		},
+		"o": function(evt){
+			if(controlled){
+				evt.preventDefault();
+				window.history.back();
+			}
+			return firstfn;
+		}
 	});
 
 	// function dealing with "g" possible completions are "^", "$", "g", "t" and "T"
@@ -193,7 +208,7 @@
 		// we only react if we're in command mode
 		if(mode!=modes.command) return;
 
-		next = next(c);
+		next = next(c, evt);
 	}
 
 	// keyup handler
@@ -209,7 +224,7 @@
 			// input commands need to be here cos if we use keydown, the character will be output
 			// into the input box when it keyups, i.e. we will end up with "::"
 			":": function(){ return edit(":"); },
-			"o": function(){ return edit(":open"); }
+			"o": function(){ if(!controlled) return edit(":open"); }
 		};
 		if(c in mods){
 			debug(c + " released");
