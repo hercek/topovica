@@ -90,6 +90,45 @@
 		return firstfn;
 	}
 
+	// follow function. creates and returns a function to follow links in current viewport
+	function follower(currstr, links, newtab){
+		// follow function
+		function followcurrstr(cs){
+			if(!(cs in links)) return firstfn;
+			if(!newtab) window.location.href = links[cs].href;
+			//TODO: handle newtab case
+			return firstfn;
+		}
+		// unpaint
+		unfollow();
+		// get list of links that will be visible
+		var vislinks = Object.keys(links).filter(k => k.startsWith(currstr));
+		// either no more matches or matched
+		if(vislinks.length<2) return followcurrstr(currstr);
+		// paint
+		vislinks.forEach(k => {
+			var ln = links[k], display = k.substr(currstr.length),
+				e = document.createElement("SPAN");
+			e.id = "follownum" + k;
+			e.className = "follownum";
+			var styletmp = {fontSize: "11px", zIndex: "10000", left: 0, top: 0 , position:"relative", backgroundColor: "yellow", "color":"red"};
+			for(var s in styletmp) e.style[s] = styletmp[s];
+			ln.appendChild(e);
+			e.innerHTML = display;
+		});
+		return function(c, evt){
+			// just follow current match
+			if(c=="Enter") return followcurrstr(currstr);
+
+			currstr = c=="Backspace"?currstr.substr(0,currstr.length-1):currstr+c;
+			return follower(currstr, links, newtab);
+		};
+	}
+
+	function unfollow(){
+		removeElementsByClass("follownum");
+	}
+
 	// send message to background script
 	function browser_command(){
 		var cmd = {"command": arguments[0], "args":null},
@@ -144,6 +183,21 @@
 				window.history.back();
 			}
 			return firstfn;
+		},
+		// link
+		"f": function(){
+			var doclinks = document.getElementsByTagName("a"), llen = doclinks.length,
+				links = {};
+
+			// links only contain links that are in the viewport
+			var count = 0;
+			for(var i=0;i<llen;i++){
+				var iv = link_in_viewport(doclinks[i]);
+				if(!iv) continue;
+				links[++count] = iv;
+			}
+			
+			return follower("",links,false);
 		}
 	});
 
@@ -194,6 +248,7 @@
 				uninsert();
 				unedit();
 			}
+			unfollow();
 			next = firstfn;
 			kunext = null;
 			return;
@@ -266,6 +321,26 @@
 		//TODO: implement autocomplete maybe, sometime.
 		btm_input.addEventListener("change", function(evt){});
 		btm_elem.appendChild(btm_input);
+	}
+
+	// helpers
+	// if e is not in current viewport, return false
+	// otherwise, return an object with the href and its bounding rectangle
+	function link_in_viewport(e) {
+		var box = e.getBoundingClientRect();
+		var inside = box.width && box.height &&
+			box.top>=0 && box.left>=0 &&
+			box.right<=document.documentElement.clientWidth &&
+			box.bottom<=document.documentElement.clientHeight;
+		if(!inside) return inside;
+		return e;
+	}
+
+	function removeElementsByClass(className){
+		var elements = document.getElementsByClassName(className);
+		while(elements.length > 0){
+			elements[0].parentNode.removeChild(elements[0]);
+		}
 	}
 
 	checkFocus(); // because refresh doesn't trigger focus event

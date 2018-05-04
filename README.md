@@ -28,6 +28,8 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `CTRL-I`, `CTRL-O` &rarr; forward and back
 
+`f` &rarr; displays indexes for links: typing in those indexes follows the link in the current tab
+
 ### Insert mode
 
 We currently detect insert mode when currently focused element is `input`, `textarea` or `select`.

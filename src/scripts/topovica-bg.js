@@ -46,6 +46,7 @@ function opener(tabid, args){
     browser.tabs.update(tabid, {url: url});
 }
 
+//TODO: put a pin in this and return after other features are implemented.
 // saves every window and exits
 function xall(){
     browser.windows.getAll({populate:true}).then(function(warr){
@@ -61,7 +62,8 @@ function xall(){
                 if(t.active) active[1] = j;
             }
         }
-        debug(sess);
+        //TODO: save this information in local storage
+        debug(JSON.stringify(sess));
     }, function(err){
         debug(`Error: ${err}`);
     });
