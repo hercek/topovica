@@ -108,12 +108,15 @@
 		// paint
 		vislinks.forEach(k => {
 			var ln = links[k], display = k.substr(currstr.length),
+				rect = ln.getBoundingClientRect(),
+				left = window.scrollX+rect.left,
+				top = window.scrollY+rect.top,
 				e = document.createElement("SPAN");
 			e.id = "follownum" + k;
 			e.className = "follownum";
-			var styletmp = {fontSize: "11px", zIndex: "10000", left: 0, top: 0 , position:"relative", backgroundColor: "yellow", "color":"red"};
+			var styletmp = {fontSize: "11px", zIndex: "10000", left: left+"px", top: top+"px", position:"absolute", backgroundColor: "yellow", "color":"red"};
 			for(var s in styletmp) e.style[s] = styletmp[s];
-			ln.appendChild(e);
+			document.getElementsByTagName("body")[0].appendChild(e);
 			e.innerHTML = display;
 		});
 		return function(c, evt){
@@ -279,7 +282,7 @@
 			// input commands need to be here cos if we use keydown, the character will be output
 			// into the input box when it keyups, i.e. we will end up with "::"
 			":": function(){ return edit(":"); },
-			"o": function(){ if(!controlled) return edit(":open"); }
+			"o": function(){ if(!controlled) return edit(":open "); }
 		};
 		if(c in mods){
 			debug(c + " released");
