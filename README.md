@@ -26,9 +26,11 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `:open`, `:o`, `o` &rarr; opens a url or does a search in the current tab.
 
+`:tabnew` &rarr; opens a url or does a search in a new tab.
+
 `CTRL-I`, `CTRL-O` &rarr; forward and back
 
-`f` &rarr; displays indexes for links: typing in those indexes follows the link in the current tab
+`f`, `F` &rarr; displays indexes for links: typing in those indexes follows the link in the current tab or a new tab, respectively
 
 ### Insert mode
 

@@ -59,6 +59,7 @@
 		var colons = {
 			"o": opener,
 			"open": opener,
+			"tabnew": tabnew,
 			"set": setter,
 			"xall": function(){ browser_command("xall"); }
 		};
@@ -76,10 +77,16 @@
 			settees[arguments[0]]();
 		}
 	}
+	
+	function tabnew(){
+		var args = ["tabnew"];
+		for(var i=0;i<arguments.length;i++) args.push(arguments[i]);
+		browser_command.apply(null, args);
+	}
 
 	function opener(){
 		var args = ["open"];
-		for(var i=0;i<arguments.length;i++) args[i+1] = arguments[i];
+		for(var i=0;i<arguments.length;i++) args.push(arguments[i]);
 		browser_command.apply(null, args);
 	}
 	// ":" functions end
@@ -90,13 +97,27 @@
 		return firstfn;
 	}
 
+	function init_follower(newtab){
+		var doclinks = document.getElementsByTagName("A"), llen = doclinks.length,
+			links = {};
+
+		// links only contain links that are in the viewport
+		var count = 0;
+		for(var i=0;i<llen;i++){
+			var iv = link_in_viewport(doclinks[i]);
+			if(!iv) continue;
+			links[++count] = iv;
+		}
+		return follower("", links, newtab);
+	}
+
 	// follow function. creates and returns a function to follow links in current viewport
 	function follower(currstr, links, newtab){
 		// follow function
 		function followcurrstr(cs){
 			if(!(cs in links)) return firstfn;
-			if(!newtab) window.location.href = links[cs].href;
-			//TODO: handle newtab case
+			if(!newtab) browser_command.apply(null,["open",links[cs].href])
+			else browser_command.apply(null, ["tabnew",links[cs].href])
 			return firstfn;
 		}
 		// unpaint
@@ -116,12 +137,15 @@
 			e.className = "follownum";
 			var styletmp = {fontSize: "11px", zIndex: "10000", left: left+"px", top: top+"px", position:"absolute", backgroundColor: "yellow", "color":"red"};
 			for(var s in styletmp) e.style[s] = styletmp[s];
-			document.getElementsByTagName("body")[0].appendChild(e);
+			document.getElementsByTagName("BODY")[0].appendChild(e);
 			e.innerHTML = display;
 		});
 		return function(c, evt){
 			// just follow current match
-			if(c=="Enter") return followcurrstr(currstr);
+			if(c=="Enter"){
+				unfollow();
+				return followcurrstr(currstr);
+			}
 
 			currstr = c=="Backspace"?currstr.substr(0,currstr.length-1):currstr+c;
 			return follower(currstr, links, newtab);
@@ -188,20 +212,8 @@
 			return firstfn;
 		},
 		// link
-		"f": function(){
-			var doclinks = document.getElementsByTagName("a"), llen = doclinks.length,
-				links = {};
-
-			// links only contain links that are in the viewport
-			var count = 0;
-			for(var i=0;i<llen;i++){
-				var iv = link_in_viewport(doclinks[i]);
-				if(!iv) continue;
-				links[++count] = iv;
-			}
-			
-			return follower("",links,false);
-		}
+		"f": function(){ return init_follower(false); },
+		"F": function(){ return init_follower(true); }
 	});
 
 	// function dealing with "g" possible completions are "^", "$", "g", "t" and "T"
@@ -302,7 +314,7 @@
 		btm_elem.id = "topovicabtm";
 		var styletmp = {zIndex: "10000", bottom: "0", position:"fixed", width:"100%", display:"none", "color":"red"};
 		for(var k in styletmp) btm_elem.style[k] = styletmp[k];
-		document.getElementsByTagName("body")[0].appendChild(btm_elem);
+		document.getElementsByTagName("BODY")[0].appendChild(btm_elem);
 		add_btm_input();
 	}
 

@@ -24,7 +24,10 @@ function tabber(target){
     q.then(gototarget, stderr);
 }
 
-function opener(tabid, args){
+function tabnew(tabid, args){ common_opener(tabid, args, true); }
+function opener(tabid, args){ common_opener(tabid, args, false); }
+
+function common_opener(tabid, args, newtab){
     var validstarts = ["http://", "https://", "ftp://"],
         url = args[0];
 
@@ -43,7 +46,8 @@ function opener(tabid, args){
     }else{
         url = "https://google.com/search?q=" + args.join("+");
     }
-    browser.tabs.update(tabid, {url: url});
+    if(!newtab) browser.tabs.update(tabid, {url: url});
+    else browser.tabs.create({active:true, openerTabId:tabid, url:url})
 }
 
 //TODO: put a pin in this and return after other features are implemented.
@@ -96,6 +100,7 @@ function commands_receiver(cmd, sender, rsp){
         "g^": function(){ tabber(0); },
         "g$": function(){ tabber(-1); },
         "open": function(){ opener(sender.tab.id, cmd.args); },
+        "tabnew": function(){ tabnew(sender.tab.id, cmd.args); },
         "debug": function(){ DEBUG=true; },
         "nodebug": function(){ DEBUG=false; },
         "xall": xall,
