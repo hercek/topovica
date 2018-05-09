@@ -89,6 +89,14 @@ function restoreMostRecent() {
 	}, stderr);
 }
 
+function get_buffers(cmd, sender, rsp){
+    return browser.tabs.query({currentWindow:true}).then(tabs => {
+        var retval = {};
+        tabs.forEach(t => retval[t.index+1] = t.title);
+        return retval;
+    });
+}
+
 function commands_receiver(cmd, sender, rsp){
     debug(cmd);
     debug(sender);
@@ -103,11 +111,12 @@ function commands_receiver(cmd, sender, rsp){
         "tabnew": function(){ tabnew(sender.tab.id, cmd.args); },
         "debug": function(){ DEBUG=true; },
         "nodebug": function(){ DEBUG=false; },
+        "b": get_buffers,
         "xall": xall,
         "u": restoreMostRecent
     };
     if(cmd.command in commands){
-        commands[cmd.command](cmd,sender,rsp);
+        return commands[cmd.command](cmd,sender,rsp);
     }
 }
 

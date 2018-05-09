@@ -10,7 +10,8 @@
 
 	// declare chain functions
 	var firstfn = null,
-		gunit = null;
+		gunit = null,
+		tabs = {};
 
 	var DEBUG = true;
 	var modes = {"command":0,"insert":1}, mode = modes.command;
@@ -136,7 +137,7 @@
 			e.id = "follownum" + k;
 			e.className = "follownum";
 			var styletmp = {fontSize: "11px", zIndex: "10000", left: left+"px", top: top+"px", position:"absolute", backgroundColor: "yellow", "color":"red"};
-			for(var s in styletmp) e.style[s] = styletmp[s];
+			apply_style(e, styletmp);
 			document.getElementsByTagName("BODY")[0].appendChild(e);
 			e.innerHTML = display;
 		});
@@ -152,6 +153,57 @@
 		};
 	}
 
+	// add bufferpicker 
+	function add_bufferpicker(){
+		if(arguments.length>0) tabs = arguments[0];
+		var bp = document.createElement("DIV");
+		bp.className = "bufferpicker";
+		bp.id = "bufferpicker";
+		var styletmp = {fontSize: "11px", backgroundColor:"white", zIndex:"10000", bottom: "0", position:"fixed", "color":"red"};
+		apply_style(bp, styletmp);
+		document.getElementsByTagName("BODY")[0].appendChild(bp);
+
+		add_brows("");
+	}
+
+	function add_brows(searchstr){
+		var sortedkeys = Object.keys(tabs).sort((a,b)=>parseInt(a)-parseInt(b)),
+			bp = document.getElementById("bufferpicker");
+
+		sortedkeys.forEach(k=>{
+			var title = tabs[k],
+				lowtitle = title.toLowerCase();
+			if(!k.startsWith(searchstr) && !lowtitle.includes(searchstr)) return;
+			var brow = document.createElement("DIV");
+			brow.className = "bufferpicker_row";
+			brow.innerHTML = `${k}: ${title}`;
+			bp.appendChild(brow);
+		})
+		
+		var hrow = document.createElement("HR"),
+			brow = document.createElement("DIV");
+		hrow.classname = "bufferpicker_row";
+		bp.appendChild(hrow);
+		brow.className = "bufferpicker_row";
+		brow.innerHTML = `:b ${searchstr}`;
+		bp.appendChild(brow);
+	}
+
+	function del_brows(){
+		removeElementsByClass("bufferpicker_row");
+	}
+
+	// delete bufferpicker div
+	function delete_bufferpicker(){
+		removeElementsByClass("bufferpicker");
+	}
+	
+	// get buffers from background script and allow user to pick
+	function bufferpicker(currindex) {
+		//TODO: refer to follower for logic flow
+		return firstfn;
+	}
+
 	function unfollow(){
 		removeElementsByClass("follownum");
 	}
@@ -161,7 +213,7 @@
 		var cmd = {"command": arguments[0], "args":null},
 			args = Array.prototype.slice.call(arguments);
 		if(args.length>1) cmd.args = args.slice(1);
-		setTimeout(browser.runtime.sendMessage, 1, cmd);
+		return browser.runtime.sendMessage(cmd);
 	}
 
 	var shifted = false,
@@ -188,6 +240,11 @@
 		"l": function(){ return move([100,0]); }, // right
 		// gt, gT, g$, g^, gg
 		"g": function(){ return gunit; },
+		// b: unlike in vimperator, this doesn't go into edit mode
+		"b": function(){
+			browser_command("b").then(add_bufferpicker, delete_bufferpicker);
+			return bufferpicker("");
+		},
 		// G
 		"G": function(){
 			var limit = Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight) - window.innerHeight;
@@ -264,6 +321,7 @@
 				unedit();
 			}
 			unfollow();
+			delete_bufferpicker();
 			next = firstfn;
 			kunext = null;
 			return;
@@ -313,7 +371,7 @@
 		btm_elem = document.createElement("DIV");
 		btm_elem.id = "topovicabtm";
 		var styletmp = {zIndex: "10000", bottom: "0", position:"fixed", width:"100%", display:"none", "color":"red"};
-		for(var k in styletmp) btm_elem.style[k] = styletmp[k];
+		apply_style(btm_elem, styletmp);
 		document.getElementsByTagName("BODY")[0].appendChild(btm_elem);
 		add_btm_input();
 	}
@@ -323,8 +381,8 @@
 		// add the input element to topovicabtm
 		btm_input = document.createElement("INPUT");
 		btm_input.id = "tpvcbtm_input";
-		styletmp = {outlineStyle:"none", width:"100%", "color":"red"};
-		for(var k in styletmp) btm_input.style[k] = styletmp[k];
+		styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
+		apply_style(btm_input, styletmp);
 		btm_input.addEventListener("focus", function(evt){
 			evt.target.style.outline = "0px none black";
 		});
@@ -353,9 +411,11 @@
 
 	function removeElementsByClass(className){
 		var elements = document.getElementsByClassName(className);
-		while(elements.length > 0){
-			elements[0].parentNode.removeChild(elements[0]);
-		}
+		while(elements.length>0) elements[0].remove();
+	}
+
+	function apply_style(e, styler){
+		for(var s in styler) e.style[s] = styler[s];
 	}
 
 	checkFocus(); // because refresh doesn't trigger focus event
