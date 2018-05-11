@@ -10,8 +10,7 @@
 
 	// declare chain functions
 	var firstfn = null,
-		gunit = null,
-		tabs = {};
+		gunit = null;
 
 	var DEBUG = true;
 	var modes = {"command":0,"insert":1}, mode = modes.command;
@@ -39,7 +38,9 @@
 	}
 
 	// ":" functions begin
+	//TODO convert this to the more self-contained style we use for buffers
 	function unedit(){
+		if(!document.getElementById("topovicabtm")) return;
 		btm_input.value = "";
 		btm_elem.style.display = "none";
 	}
@@ -153,57 +154,11 @@
 		};
 	}
 
-	// add bufferpicker 
-	function add_bufferpicker(){
-		if(arguments.length>0) tabs = arguments[0];
-		var bp = document.createElement("DIV");
-		bp.className = "bufferpicker";
-		bp.id = "bufferpicker";
-		var styletmp = {fontSize: "11px", backgroundColor:"white", zIndex:"10000", bottom: "0", position:"fixed", "color":"red"};
-		apply_style(bp, styletmp);
-		document.getElementsByTagName("BODY")[0].appendChild(bp);
-
-		add_brows("");
-	}
-
-	function add_brows(searchstr){
-		var sortedkeys = Object.keys(tabs).sort((a,b)=>parseInt(a)-parseInt(b)),
-			bp = document.getElementById("bufferpicker");
-
-		sortedkeys.forEach(k=>{
-			var title = tabs[k],
-				lowtitle = title.toLowerCase();
-			if(!k.startsWith(searchstr) && !lowtitle.includes(searchstr)) return;
-			var brow = document.createElement("DIV");
-			brow.className = "bufferpicker_row";
-			brow.innerHTML = `${k}: ${title}`;
-			bp.appendChild(brow);
-		})
-		
-		var hrow = document.createElement("HR"),
-			brow = document.createElement("DIV");
-		hrow.classname = "bufferpicker_row";
-		bp.appendChild(hrow);
-		brow.className = "bufferpicker_row";
-		brow.innerHTML = `:b ${searchstr}`;
-		bp.appendChild(brow);
-	}
-
-	function del_brows(){
-		removeElementsByClass("bufferpicker_row");
-	}
-
 	// delete bufferpicker div
 	function delete_bufferpicker(){
 		removeElementsByClass("bufferpicker");
 	}
 	
-	// get buffers from background script and allow user to pick
-	function bufferpicker(currindex) {
-		//TODO: refer to follower for logic flow
-		return firstfn;
-	}
-
 	function unfollow(){
 		removeElementsByClass("follownum");
 	}
@@ -242,8 +197,7 @@
 		"g": function(){ return gunit; },
 		// b: unlike in vimperator, this doesn't go into edit mode
 		"b": function(){
-			browser_command("b").then(add_bufferpicker, delete_bufferpicker);
-			return bufferpicker("");
+			return bufferpicker();
 		},
 		// G
 		"G": function(){
@@ -315,15 +269,7 @@
 
 		// ESC resets immediately
 		if(c=="Escape"){
-			debug(mode);
-			if(mode==modes.insert){
-				uninsert();
-				unedit();
-			}
-			unfollow();
-			delete_bufferpicker();
-			next = firstfn;
-			kunext = null;
+			reset();
 			return;
 		}
 
@@ -337,6 +283,18 @@
 		if(mode!=modes.command) return;
 
 		next = next(c, evt);
+	}
+
+	function reset(){
+		debug(mode);
+		if(mode==modes.insert){
+			uninsert();
+			unedit();
+		}
+		unfollow();
+		delete_bufferpicker();
+		next = firstfn;
+		kunext = null;
 	}
 
 	// keyup handler
@@ -381,7 +339,7 @@
 		// add the input element to topovicabtm
 		btm_input = document.createElement("INPUT");
 		btm_input.id = "tpvcbtm_input";
-		styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
+		var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
 		apply_style(btm_input, styletmp);
 		btm_input.addEventListener("focus", function(evt){
 			evt.target.style.outline = "0px none black";
@@ -418,6 +376,83 @@
 		for(var s in styler) e.style[s] = styler[s];
 	}
 
+	function bufferpicker(){
+		var tabs = {}, browcntr = null, bp = null, binput = null,
+		searchstr = "", sortedkeys = [];
+		// add bufferpicker 
+		var add_bufferpicker = function(alltabs){
+			tabs = alltabs;
+			bp = document.createElement("DIV");
+			bp.className = "bufferpicker";
+			bp.id = "bufferpicker";
+			var styletmp = {fontSize: "11px", backgroundColor:"white", zIndex:"10000", bottom: "0", position:"fixed", width:"100%", "color":"red"};
+			apply_style(bp, styletmp);
+			document.getElementsByTagName("BODY")[0].appendChild(bp);
+
+			browcntr = document.createElement("DIV");
+			browcntr.id = "bufferpicker_row_container";
+			bp.appendChild(browcntr);
+	
+			add_brows();
+			add_binput();
+		};
+	
+		var add_brows = function(){
+			sortedkeys = Object.keys(tabs).sort((a,b)=>parseInt(a)-parseInt(b));
+	
+			sortedkeys.forEach(k=>{
+				var title = tabs[k].title,
+					lowtitle = title.toLowerCase();
+				if(!k.startsWith(searchstr) && !lowtitle.includes(searchstr)) return;
+				var brow = document.createElement("DIV");
+				brow.className = "bufferpicker_row";
+				brow.innerHTML = `${k}: ${title}`;
+				browcntr.appendChild(brow);
+			})
+		};
+
+		var add_binput = function(){
+			binput = document.createElement("INPUT");
+			binput.className = "bufferpicker_input";
+			binput.readOnly = true;
+			binput.value = `:b ${searchstr}`;
+			var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
+			apply_style(binput, styletmp);
+			bp.appendChild(binput);
+			binput.focus();
+			binput.onkeypress = binputkeypress;
+		}
+	
+		var del_brows = function(){
+			removeElementsByClass("bufferpicker_row");
+		}
+
+		var firstmatch = function(){
+			for(var i=0;i<sortedkeys.length;i++){
+				var k = sortedkeys[i], id=tabs[k].id, lowtitle = tabs[k].title.toLowerCase();
+				if(k.startsWith(searchstr) || lowtitle.includes(searchstr)){
+					reset();
+					browser_command("tabto", id);
+					return;
+				}
+			}
+		}
+
+		var binputkeypress = function(evt){
+			var c = evt.key;
+			if(c=="Enter"){
+				firstmatch();
+			}
+			searchstr = c=="Backspace"?searchstr.substr(0,searchstr.length-1):searchstr+c;
+			binput.value = `:b ${searchstr}`;
+			del_brows();
+			add_brows();
+		};
+		browser_command("b").then(add_bufferpicker, reset);
+	
+		return firstfn;
+	}
+
 	checkFocus(); // because refresh doesn't trigger focus event
 	window.addEventListener("keydown", kd);
 	window.addEventListener("keyup", ku);
@@ -426,3 +461,4 @@
 	// on blur, we stop checking focus
 	window.addEventListener("blur", function(){ if(fint!=null){ clearInterval(fint); fint=null; }});
 })();
+

@@ -16,6 +16,8 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `gt`, `gT`, `g^`, `g$` &rarr; next tab, previous tab, first tab, last tab, respectively
 
+`b` &rarr; brings up the buffer selector interface. type in the index of the buffer or the title of the buffer. pressing `Enter` jumps to first match
+
 #### Tab creation/deletion
 
 `d` &rarr; delete: close tab

@@ -92,7 +92,7 @@ function restoreMostRecent() {
 function get_buffers(cmd, sender, rsp){
     return browser.tabs.query({currentWindow:true}).then(tabs => {
         var retval = {};
-        tabs.forEach(t => retval[t.index+1] = t.title);
+        tabs.forEach(t => retval[t.index+1] = {title:t.title, id:t.id});
         return retval;
     });
 }
@@ -109,6 +109,7 @@ function commands_receiver(cmd, sender, rsp){
         "g$": function(){ tabber(-1); },
         "open": function(){ opener(sender.tab.id, cmd.args); },
         "tabnew": function(){ tabnew(sender.tab.id, cmd.args); },
+		"tabto": function(cmd) { browser.tabs.update(cmd.args[0], {active:true}); },
         "debug": function(){ DEBUG=true; },
         "nodebug": function(){ DEBUG=false; },
         "b": get_buffers,
