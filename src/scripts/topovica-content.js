@@ -139,7 +139,7 @@
 			e.className = "follownum";
 			var styletmp = {fontSize: "11px", zIndex: "10000", left: left+"px", top: top+"px", position:"absolute", backgroundColor: "yellow", "color":"red"};
 			apply_style(e, styletmp);
-			document.getElementsByTagName("BODY")[0].appendChild(e);
+			document.body.appendChild(e);
 			e.innerHTML = display;
 		});
 		return function(c, evt){
@@ -180,6 +180,9 @@
 		return function(c, evt){
 			try{
 				if(c in actions){
+					evt.preventDefault();
+					evt.stopPropagation();
+					evt.stopImmediatePropagation();
 					return actions[c](evt);
 				}
 			} catch(e) {}
@@ -204,27 +207,33 @@
 			var limit = Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight) - window.innerHeight;
 			return move([0,limit]);
 		},
-		// delete and undo
-		"d": function(){ browser_command("d"); return firstfn; },
-		"u": function(){ browser_command("u"); return firstfn; },
+		// delete and undo, big down and big up
+		"d": function(){
+			if(controlled) return move([0,500]);
+			browser_command("d"); return firstfn;
+		},
+		"u": function(){
+			if(controlled) return move([0,-500]);
+			browser_command("u"); return firstfn;
+		},
 		// back and forward
 		"i": function(evt){
 			if(controlled){
-				evt.preventDefault();
 				window.history.forward();
 			}
 			return firstfn;
 		},
 		"o": function(evt){
 			if(controlled){
-				evt.preventDefault();
 				window.history.back();
 			}
 			return firstfn;
 		},
 		// link
 		"f": function(){ return init_follower(false); },
-		"F": function(){ return init_follower(true); }
+		"F": function(){ return init_follower(true); },
+		// copy
+		"y": copy_address
 	});
 
 	// function dealing with "g" possible completions are "^", "$", "g", "t" and "T"
@@ -330,7 +339,7 @@
 		btm_elem.id = "topovicabtm";
 		var styletmp = {zIndex: "10000", bottom: "0", position:"fixed", width:"100%", display:"none", "color":"red"};
 		apply_style(btm_elem, styletmp);
-		document.getElementsByTagName("BODY")[0].appendChild(btm_elem);
+		document.body.appendChild(btm_elem);
 		add_btm_input();
 	}
 
@@ -376,6 +385,23 @@
 		for(var s in styler) e.style[s] = styler[s];
 	}
 
+	function copy_address(){
+		var e = document.createElement("INPUT"),
+			loc = window.location.href,
+			styletmp = {display:"none", left: "-9999", position:"absolute"},
+			focused = document.activeElement;
+
+		e.value = loc;
+		e.setAttribute("readonly", "");
+		document.body.appendChild(e);
+		e.select();
+		document.execCommand("copy");
+		e.remove();
+		focused.select();
+		return firstfn;
+	}
+
+	// takes care of switching buffers
 	function bufferpicker(){
 		var tabs = {}, browcntr = null, bp = null, binput = null,
 		searchstr = "", sortedkeys = [];
@@ -387,7 +413,7 @@
 			bp.id = "bufferpicker";
 			var styletmp = {fontSize: "11px", backgroundColor:"white", zIndex:"10000", bottom: "0", position:"fixed", width:"100%", "color":"red"};
 			apply_style(bp, styletmp);
-			document.getElementsByTagName("BODY")[0].appendChild(bp);
+			document.body.appendChild(bp);
 
 			browcntr = document.createElement("DIV");
 			browcntr.id = "bufferpicker_row_container";

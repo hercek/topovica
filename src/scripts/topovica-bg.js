@@ -14,7 +14,6 @@ function tabber(target){
 
     gototarget = function(tabs){
         target = target % tabs.length;
-		tabs.forEach((t)=> { debug(t.index, t.title); });
         // because % is remainder operator, not modulo
         target = target<0?tabs.length+target:target;
         // returns a promise but we don't care

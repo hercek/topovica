@@ -10,6 +10,8 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `h`,`j`,`k`,`l` &rarr; left, down, up and right, respectively 
 
+`CTRL-D`, `CTRL-U` &rarr; 10x `j` and 10x `k`, respectively
+
 `gg`, `G` &rarr; top of page, bottom of page
 
 #### Tab movements
@@ -26,17 +28,21 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 #### Navigation
 
-`:open`, `:o`, `o` &rarr; opens a url or does a search in the current tab.
+`:open`, `:o`, `o` &rarr; opens a url or does a search in the current tab
 
-`:tabnew` &rarr; opens a url or does a search in a new tab.
+`:tabnew` &rarr; opens a url or does a search in a new tab
 
 `CTRL-I`, `CTRL-O` &rarr; forward and back
 
 `f`, `F` &rarr; displays indexes for links: typing in those indexes follows the link in the current tab or a new tab, respectively
 
+#### Misc
+
+`y` &rarr; copies the current url to the clipboard
+
 ### Insert mode
 
-We currently detect insert mode when currently focused element is `input`, `textarea` or `select`.
+We currently detect insert mode when currently focused element is `input`, `textarea` or `select`
 
 ## Credits
 
