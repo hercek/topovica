@@ -306,6 +306,14 @@
 		kunext = null;
 	}
 
+	function runku(evt, c, fn){
+		debug(c + " released");
+		evt.preventDefault();
+		evt.stopPropagation();
+		evt.stopImmediatePropagation();
+		fn();
+	}
+
 	// keyup handler
 	function ku(evt){
 		var c = evt.key;
@@ -321,14 +329,13 @@
 			":": function(){ return edit(":"); },
 			"o": function(){ if(!controlled) return edit(":open "); }
 		};
+
 		if(c in mods){
-			debug(c + " released");
-			mods[c]();
+			runku(evt, c, mods[c]);
 		}
 
 		if(mode==modes.command && c in enteredits){
-			debug(c + " released");
-			enteredits[c]();
+			runku(evt, c, enteredits[c]);
 		}
 	}
 
@@ -480,8 +487,8 @@
 	}
 
 	checkFocus(); // because refresh doesn't trigger focus event
-	window.addEventListener("keydown", kd);
-	window.addEventListener("keyup", ku);
+	window.addEventListener("keydown", kd, true);
+	window.addEventListener("keyup", ku, true);
 	// if this window is focused we need to check if focus is on an input element
 	window.addEventListener("focus", checkFocus);
 	// on blur, we stop checking focus
