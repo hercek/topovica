@@ -96,6 +96,14 @@ function get_buffers(cmd, sender, rsp){
     });
 }
 
+function find(cmd){
+    debug(`search term ${cmd.args[0]}`);
+    return browser.find.find(cmd.args[0],{includeRectData:true}).then(res => {
+        browser.find.highlightResults();
+        return res;
+    });
+}
+
 function commands_receiver(cmd, sender, rsp){
     debug(cmd);
     debug(sender);
@@ -112,6 +120,8 @@ function commands_receiver(cmd, sender, rsp){
         "debug": function(){ DEBUG=true; },
         "nodebug": function(){ DEBUG=false; },
         "b": get_buffers,
+        "find": find,
+        "unfind": function(){ browser.find.removeHighlighting(); },
         "xall": xall,
         "u": restoreMostRecent
     };

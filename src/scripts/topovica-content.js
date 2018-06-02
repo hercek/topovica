@@ -14,10 +14,13 @@
 
 	var DEBUG = true;
 	var modes = {"command":0,"insert":1}, mode = modes.command;
-	//
+
 	// ":" variables
 	var btm_elem = null,
 		btm_input = null;
+
+	// current search term
+	var currfind = null;
 
 	var focd = null;
 
@@ -156,7 +159,16 @@
 
 	// delete bufferpicker div
 	function delete_bufferpicker(){
-		removeElementsByClass("bufferpicker");
+		removeElementsByClass("topovica_bufferpicker");
+	}
+
+	function delete_finder(){
+		if(currfind && currfind.highlighted){
+			currfind.highlighted=false;
+			browser_command("unfind");
+		}
+		removeElementsByClass("topovica_finder");
+		removeElementsByClass("topovica_finder_highlight");
 	}
 	
 	function unfollow(){
@@ -190,6 +202,30 @@
 		};
 	}
 
+	function find_next(backwards){
+		if(!currfind.highlighted) return firstfn;
+		currfind.index = backwards?currfind.index-1:currfind.index+1;
+		currfind.index = currfind.index % currfind.rects.length;
+		// ugh. no real mod operator in js
+		currfind.index = currfind.index<0?currfind.rects.length+currfind.index:currfind.index;
+		var rects = currfind.rects[currfind.index]
+		find_highlight(rects);
+		window.scrollTo({top:rects[0].top, left:rects[0].left});
+		return firstfn;
+	}
+
+	function find_highlight(rects){
+		removeElementsByClass("topovica_finder_highlight");
+		var el;
+		for(rect of rects){
+			el = document.createElement("div");
+			el.className = "topovica_finder_highlight";
+			var styletmp = {zIndex:"10000", backgroundColor:"yellow", position:"absolute", opacity:"0.7", top:`${rect.top}px`, left:`${rect.left}px`, width:`${rect.right-rect.left}px`, height:`${rect.bottom-rect.top}px`};
+			apply_style(el, styletmp);
+			document.body.appendChild(el);
+		}
+	}
+
 	firstfn = chainlink({
 		// basic movements
 		"h": function(){ return move([-100,0]); }, // left
@@ -198,10 +234,12 @@
 		"l": function(){ return move([100,0]); }, // right
 		// gt, gT, g$, g^, gg
 		"g": function(){ return gunit; },
+		// search functions
+		"/": finder,
+		"n": function() { return find_next(false); },
+		"N": function() { return find_next(true); },
 		// b: unlike in vimperator, this doesn't go into edit mode
-		"b": function(){
-			return bufferpicker();
-		},
+		"b": function(){ return bufferpicker(); },
 		// G
 		"G": function(){
 			var limit = Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight) - window.innerHeight;
@@ -254,7 +292,7 @@
 
 	function debug(){
 		if(!DEBUG) return;
-		console.log.apply(undefined, arguments);
+		console.log.apply(null, arguments);
 	}
 
 	// goes back to command mode
@@ -302,6 +340,7 @@
 		}
 		unfollow();
 		delete_bufferpicker();
+		delete_finder();
 		next = firstfn;
 		kunext = null;
 	}
@@ -326,8 +365,8 @@
 		var enteredits = {
 			// input commands need to be here cos if we use keydown, the character will be output
 			// into the input box when it keyups, i.e. we will end up with "::"
-			":": function(){ return edit(":"); },
-			"o": function(){ if(!controlled) return edit(":open "); }
+			":": function(){ edit(":"); },
+			"o": function(){ if(!controlled) edit(":open "); }
 		};
 
 		if(c in mods){
@@ -408,6 +447,47 @@
 		return firstfn;
 	}
 
+	// takes care of search
+	function finder(){
+		var fdiv = document.createElement("DIV");
+		fdiv.className = "topovica_finder";
+		fdiv.id = "topovica_finder";
+		var styletmp = {fontSize: "11px", backgroundColor:"white", zIndex:"10000", bottom: "0", position:"fixed", width:"100%", "color":"red"};
+		apply_style(fdiv, styletmp);
+		document.body.appendChild(fdiv);
+
+		var finput = document.createElement("INPUT");
+		finput.className = "topovica_finder_input";
+		finput.value = `/`;
+		var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
+		apply_style(finput, styletmp);
+		finput.onkeypress = function(evt){
+			var c = evt.key;
+			var iv = evt.target.value;
+			if(!iv.startsWith("/")){
+				currfind = null;
+				reset();
+				return;
+			}
+			if(c=="Enter"){
+				browser_command("find", iv.substring(1,iv.length)).then(res => {
+					currfind = {highlighted: true, rects: []}
+					for(rd of res.rectData){
+						currfind.rects.push(rd.rectsAndTexts.rectList);
+					}
+					currfind.index = currfind.rects.length-1;
+					find_next(false);
+				}, err => {
+					debug(`error in find: ${err}`);
+				});
+				reset();
+			}
+		}
+		fdiv.appendChild(finput);
+		finput.focus();
+		return firstfn;
+	}
+
 	// takes care of switching buffers
 	function bufferpicker(){
 		var tabs = {}, browcntr = null, bp = null, binput = null,
@@ -416,14 +496,14 @@
 		var add_bufferpicker = function(alltabs){
 			tabs = alltabs;
 			bp = document.createElement("DIV");
-			bp.className = "bufferpicker";
-			bp.id = "bufferpicker";
+			bp.className = "topovica_bufferpicker";
+			bp.id = "topovica_bufferpicker";
 			var styletmp = {fontSize: "11px", backgroundColor:"white", zIndex:"10000", bottom: "0", position:"fixed", width:"100%", "color":"red"};
 			apply_style(bp, styletmp);
 			document.body.appendChild(bp);
 
 			browcntr = document.createElement("DIV");
-			browcntr.id = "bufferpicker_row_container";
+			browcntr.id = "topovica_bufferpicker_row_container";
 			bp.appendChild(browcntr);
 	
 			add_brows();
@@ -438,7 +518,7 @@
 					lowtitle = title.toLowerCase();
 				if(!k.startsWith(searchstr) && !lowtitle.includes(searchstr)) return;
 				var brow = document.createElement("DIV");
-				brow.className = "bufferpicker_row";
+				brow.className = "topovica_bufferpicker_row";
 				brow.innerHTML = `${k}: ${title}`;
 				browcntr.appendChild(brow);
 			})
@@ -446,7 +526,7 @@
 
 		var add_binput = function(){
 			binput = document.createElement("INPUT");
-			binput.className = "bufferpicker_input";
+			binput.className = "topovica_bufferpicker_input";
 			binput.readOnly = true;
 			binput.value = `:b ${searchstr}`;
 			var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
@@ -457,7 +537,7 @@
 		}
 	
 		var del_brows = function(){
-			removeElementsByClass("bufferpicker_row");
+			removeElementsByClass("topovica_bufferpicker_row");
 		}
 
 		var firstmatch = function(){
