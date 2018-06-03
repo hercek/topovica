@@ -201,41 +201,6 @@
 		};
 	}
 
-	function find_next(backwards){
-		if(!currfind.highlighted) return firstfn;
-		currfind.index = backwards?currfind.index-1:currfind.index+1;
-		currfind.index = currfind.index % currfind.ranges.length;
-		// ugh. no real mod operator in js
-		currfind.index = currfind.index<0?currfind.ranges.length+currfind.index:currfind.index;
-
-        var rd = currfind.ranges[currfind.index], selection = window.getSelection(), range = document.createRange(),
-            walker = document.createTreeWalker(document, window.NodeFilter.SHOW_TEXT,null,false),
-            idx = 0;
-
-        while(idx<=rd.endTextNodePos) {
-            var n = walker.nextNode();
-            if(n==null){
-                reset();
-                return firstfn;
-            }
-
-            if(idx==rd.startTextNodePos){
-                range.setStart(n, rd.startOffset);
-                n.parentElement.scrollIntoView();
-            }
-            if(idx==rd.endTextNodePos) {
-                range.setEnd(n, rd.endOffset);
-                selection.removeAllRanges();
-                selection.addRange(range);
-                return firstfn;
-            }
-            idx++;
-        }
-	}
-
-	function find_select(rd){
-	}
-
 	firstfn = chainlink({
 		// basic movements
 		"h": function(){ return move([-100,0]); }, // left
@@ -348,6 +313,7 @@
 			uninsert();
 			unedit();
 		}
+        window.getSelection().removeAllRanges();
 		unfollow();
 		delete_bufferpicker();
 		delete_finder();
@@ -496,6 +462,41 @@
 		fdiv.appendChild(finput);
 		finput.focus();
 		return firstfn;
+	}
+
+    // looks for next search result
+	function find_next(backwards){
+		if(!currfind.highlighted) return firstfn;
+		currfind.index = backwards?currfind.index-1:currfind.index+1;
+		currfind.index = currfind.index % currfind.ranges.length;
+		// ugh. no real mod operator in js
+		currfind.index = currfind.index<0?currfind.ranges.length+currfind.index:currfind.index;
+
+        var rd = currfind.ranges[currfind.index], selection = window.getSelection(), range = document.createRange(),
+            walker = document.createTreeWalker(document, window.NodeFilter.SHOW_TEXT,null,false),
+            idx = 0;
+
+        while(idx<=rd.endTextNodePos) {
+            var n = walker.nextNode();
+            if(n==null){
+                reset();
+                return firstfn;
+            }
+
+            if(idx==rd.startTextNodePos){
+                range.setStart(n, rd.startOffset);
+                var pe = n.parentElement;
+                // scroll to selection
+                if(pe) pe.scrollIntoView({behavior:"auto",block:"center",inline:"center"});
+            }
+            if(idx==rd.endTextNodePos) {
+                range.setEnd(n, rd.endOffset);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                return firstfn;
+            }
+            idx++;
+        }
 	}
 
 	// takes care of switching buffers

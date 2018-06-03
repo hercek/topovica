@@ -14,6 +14,8 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `gg`, `G` &rarr; top of page, bottom of page
 
+`/` &rarr; search page for text matches
+
 #### Tab movements
 
 `gt`, `gT`, `g^`, `g$` &rarr; next tab, previous tab, first tab, last tab, respectively
