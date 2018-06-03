@@ -168,7 +168,6 @@
 			browser_command("unfind");
 		}
 		removeElementsByClass("topovica_finder");
-		removeElementsByClass("topovica_finder_highlight");
 	}
 	
 	function unfollow(){
@@ -205,25 +204,36 @@
 	function find_next(backwards){
 		if(!currfind.highlighted) return firstfn;
 		currfind.index = backwards?currfind.index-1:currfind.index+1;
-		currfind.index = currfind.index % currfind.rects.length;
+		currfind.index = currfind.index % currfind.ranges.length;
 		// ugh. no real mod operator in js
-		currfind.index = currfind.index<0?currfind.rects.length+currfind.index:currfind.index;
-		var rects = currfind.rects[currfind.index]
-		find_highlight(rects);
-		window.scrollTo({top:rects[0].top, left:rects[0].left});
-		return firstfn;
+		currfind.index = currfind.index<0?currfind.ranges.length+currfind.index:currfind.index;
+
+        var rd = currfind.ranges[currfind.index], selection = window.getSelection(), range = document.createRange(),
+            walker = document.createTreeWalker(document, window.NodeFilter.SHOW_TEXT,null,false),
+            idx = 0;
+
+        while(idx<=rd.endTextNodePos) {
+            var n = walker.nextNode();
+            if(n==null){
+                reset();
+                return firstfn;
+            }
+
+            if(idx==rd.startTextNodePos){
+                range.setStart(n, rd.startOffset);
+                n.parentElement.scrollIntoView();
+            }
+            if(idx==rd.endTextNodePos) {
+                range.setEnd(n, rd.endOffset);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                return firstfn;
+            }
+            idx++;
+        }
 	}
 
-	function find_highlight(rects){
-		removeElementsByClass("topovica_finder_highlight");
-		var el;
-		for(rect of rects){
-			el = document.createElement("div");
-			el.className = "topovica_finder_highlight";
-			var styletmp = {zIndex:"10000", backgroundColor:"yellow", position:"absolute", opacity:"0.7", top:`${rect.top}px`, left:`${rect.left}px`, width:`${rect.right-rect.left}px`, height:`${rect.bottom-rect.top}px`};
-			apply_style(el, styletmp);
-			document.body.appendChild(el);
-		}
+	function find_select(rd){
 	}
 
 	firstfn = chainlink({
@@ -471,11 +481,11 @@
 			}
 			if(c=="Enter"){
 				browser_command("find", iv.substring(1,iv.length)).then(res => {
-					currfind = {highlighted: true, rects: []}
-					for(rd of res.rectData){
-						currfind.rects.push(rd.rectsAndTexts.rectList);
-					}
-					currfind.index = currfind.rects.length-1;
+					currfind = {highlighted: true, ranges: []}
+                    for(var rd of res.rangeData){
+                        currfind.ranges.push(rd)
+                    }
+					currfind.index = currfind.ranges.length-1;
 					find_next(false);
 				}, err => {
 					debug(`error in find: ${err}`);

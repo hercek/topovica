@@ -98,7 +98,7 @@ function get_buffers(cmd, sender, rsp){
 
 function find(cmd){
     debug(`search term ${cmd.args[0]}`);
-    return browser.find.find(cmd.args[0],{includeRectData:true}).then(res => {
+    return browser.find.find(cmd.args[0],{includeRangeData:true}).then(res => {
         browser.find.highlightResults();
         return res;
     });
