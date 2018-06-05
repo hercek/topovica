@@ -246,7 +246,10 @@
 		"f": function(){ return init_follower(false); },
 		"F": function(){ return init_follower(true); },
 		// copy
-		"y": copy_address
+		"y": copy_address,
+		// refresh
+		"r": function(){ window.location.reload(true); return firstfn; },
+		"R": function(){ window.location.reload(false); return firstfn; }
 	});
 
 	// function dealing with "g" possible completions are "^", "$", "g", "t" and "T"
@@ -313,7 +316,7 @@
 			uninsert();
 			unedit();
 		}
-        window.getSelection().removeAllRanges();
+		window.getSelection().removeAllRanges();
 		unfollow();
 		delete_bufferpicker();
 		delete_finder();
@@ -448,9 +451,9 @@
 			if(c=="Enter"){
 				browser_command("find", iv.substring(1,iv.length)).then(res => {
 					currfind = {highlighted: true, ranges: []}
-                    for(var rd of res.rangeData){
-                        currfind.ranges.push(rd)
-                    }
+					for(var rd of res.rangeData){
+						currfind.ranges.push(rd)
+					}
 					currfind.index = currfind.ranges.length-1;
 					find_next(false);
 				}, err => {
@@ -464,7 +467,7 @@
 		return firstfn;
 	}
 
-    // looks for next search result
+	// looks for next search result
 	function find_next(backwards){
 		if(!currfind.highlighted) return firstfn;
 		currfind.index = backwards?currfind.index-1:currfind.index+1;
@@ -472,31 +475,31 @@
 		// ugh. no real mod operator in js
 		currfind.index = currfind.index<0?currfind.ranges.length+currfind.index:currfind.index;
 
-        var rd = currfind.ranges[currfind.index], selection = window.getSelection(), range = document.createRange(),
-            walker = document.createTreeWalker(document, window.NodeFilter.SHOW_TEXT,null,false),
-            idx = 0;
+		var rd = currfind.ranges[currfind.index], selection = window.getSelection(), range = document.createRange(),
+			walker = document.createTreeWalker(document, window.NodeFilter.SHOW_TEXT,null,false),
+			idx = 0;
 
-        while(idx<=rd.endTextNodePos) {
-            var n = walker.nextNode();
-            if(n==null){
-                reset();
-                return firstfn;
-            }
+		while(idx<=rd.endTextNodePos) {
+			var n = walker.nextNode();
+			if(n==null){
+				reset();
+				return firstfn;
+			}
 
-            if(idx==rd.startTextNodePos){
-                range.setStart(n, rd.startOffset);
-                var pe = n.parentElement;
-                // scroll to selection
-                if(pe) pe.scrollIntoView({behavior:"auto",block:"center",inline:"center"});
-            }
-            if(idx==rd.endTextNodePos) {
-                range.setEnd(n, rd.endOffset);
-                selection.removeAllRanges();
-                selection.addRange(range);
-                return firstfn;
-            }
-            idx++;
-        }
+			if(idx==rd.startTextNodePos){
+				range.setStart(n, rd.startOffset);
+				var pe = n.parentElement;
+				// scroll to selection
+				if(pe) pe.scrollIntoView({behavior:"auto",block:"center",inline:"center"});
+			}
+			if(idx==rd.endTextNodePos) {
+				range.setEnd(n, rd.endOffset);
+				selection.removeAllRanges();
+				selection.addRange(range);
+				return firstfn;
+			}
+			idx++;
+		}
 	}
 
 	// takes care of switching buffers

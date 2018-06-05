@@ -38,6 +38,8 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `f`, `F` &rarr; displays indexes for links: typing in those indexes follows the link in the current tab or a new tab, respectively
 
+`r`, `R` &rarr; hard and soft (use cache) refresh the page, respectively. yes, why shouldn't the default behaviour be hard refresh? =)
+
 #### Misc
 
 `y` &rarr; copies the current url to the clipboard
