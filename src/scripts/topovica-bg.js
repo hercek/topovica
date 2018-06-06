@@ -49,29 +49,6 @@ function common_opener(tabid, args, newtab){
 	else browser.tabs.create({active:true, openerTabId:tabid, url:url})
 }
 
-//TODO: put a pin in this and return after other features are implemented.
-// saves every window and exits
-function xall(){
-	browser.windows.getAll({populate:true}).then(function(warr){
-		var wins = [], active = [0,0],
-			sess = {"wins":wins, "active":active};
-		for(var i=0;i<warr.length;i++){
-			var win = [], w = warr[i];
-			if(w.focused) active[0] = i;
-			wins.push(win);
-			for(var j=0;j<w.tabs.length;j++){
-				var t = w.tabs[j];
-				win.push(t.url)
-				if(t.active) active[1] = j;
-			}
-		}
-		//TODO: save this information in local storage
-		debug(JSON.stringify(sess));
-	}, function(err){
-		debug(`Error: ${err}`);
-	});
-}
-
 // copied from mozilla
 function restoreMostRecent() {
 	browser.sessions.getRecentlyClosed({maxResults:1}).then(function(sessionInfos){
@@ -122,7 +99,6 @@ function commands_receiver(cmd, sender, rsp){
 		"b": get_buffers,
 		"find": find,
 		"unfind": function(){ browser.find.removeHighlighting(); },
-		"xall": xall,
 		"u": restoreMostRecent
 	};
 	if(cmd.command in commands){

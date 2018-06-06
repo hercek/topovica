@@ -65,8 +65,7 @@
 			"o": opener,
 			"open": opener,
 			"tabnew": tabnew,
-			"set": setter,
-			"xall": function(){ browser_command("xall"); }
+			"set": setter
 		};
 		if(!(cmd[0] in colons)) return;
 
