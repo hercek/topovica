@@ -15,10 +15,6 @@
 	var DEBUG = true;
 	var modes = {"command":0,"insert":1}, mode = modes.command;
 
-	// ":" variables
-	var btm_elem = null,
-		btm_input = null;
-
 	// current search term
 	var currfind = null;
 
@@ -43,21 +39,48 @@
 	// ":" functions begin
 	//TODO convert this to the more self-contained style we use for buffers
 	function unedit(){
-		if(!document.getElementById("topovicabtm")) return;
-		btm_input.value = "";
-		btm_elem.style.display = "none";
+		removeElementsByClass("topovicabtm");
 	}
 	
 	function edit(v){
-		add_btm();
-		btm_elem.style.display = "block";
-		btm_input.focus();
-		btm_input.value = v;
+        // add container
+		var btm = document.createElement("DIV");
+		btm.className = "topovicabtm";
+		var styletmp = {zIndex: "10000", bottom: "0", position:"fixed", width:"100%", display:"none", "color":"red"};
+		apply_style(btm, styletmp);
+		document.body.appendChild(btm);
+		btm.style.display = "block";
+
+        // add rows container
+        var hints = document.createElement("DIV");
+        hints.className = "topovicabtm_hints";
+        btm.appendChild(hints);
+
+        // add input element
+		var input = document.createElement("INPUT");
+		input.id = "tpvcinput";
+		var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
+		apply_style(input, styletmp);
+		input.addEventListener("focus", function(evt){
+			evt.target.style.outline = "0px none black";
+		});
+		input.addEventListener("keydown", function(evt){
+			var c = evt.key;
+			if(c!="Enter") return;
+			exec_edit();
+		});
+		//TODO: implement autocomplete maybe, sometime.
+		input.addEventListener("change", function(evt){});
+		btm.appendChild(input);
+
+		input.focus();
+		input.value = v;
 		return firstfn;
 	}
 
 	function exec_edit(){
-		var cmd = btm_input.value.replace(/^:/,"").split(" ");
+        var input = document.getElementById("tpvcinput"), cmd="";
+        if(input) cmd = input.value.replace(/^:/,"").split(" ");
 		uninsert();
 		unedit();
 		// do something
@@ -354,37 +377,6 @@
 		if(mode==modes.command && c in enteredits){
 			runku(evt, c, enteredits[c]);
 		}
-	}
-
-	// add topovicabtm div
-	function add_btm(){
-		if(document.getElementById("topovicabtm")) return;
-		btm_elem = document.createElement("DIV");
-		btm_elem.id = "topovicabtm";
-		var styletmp = {zIndex: "10000", bottom: "0", position:"fixed", width:"100%", display:"none", "color":"red"};
-		apply_style(btm_elem, styletmp);
-		document.body.appendChild(btm_elem);
-		add_btm_input();
-	}
-
-	// add bottom input
-	function add_btm_input(){
-		// add the input element to topovicabtm
-		btm_input = document.createElement("INPUT");
-		btm_input.id = "tpvcbtm_input";
-		var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
-		apply_style(btm_input, styletmp);
-		btm_input.addEventListener("focus", function(evt){
-			evt.target.style.outline = "0px none black";
-		});
-		btm_input.addEventListener("keydown", function(evt){
-			var c = evt.key;
-			if(c!="Enter") return;
-			exec_edit();
-		});
-		//TODO: implement autocomplete maybe, sometime.
-		btm_input.addEventListener("change", function(evt){});
-		btm_elem.appendChild(btm_input);
 	}
 
 	// helpers
