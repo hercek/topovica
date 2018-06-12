@@ -41,24 +41,36 @@
 	function unedit(){
 		removeElementsByClass("topovicabtm");
 	}
+
+	function edit_fill_hints(li){
+		var hints = document.getElementById("topovicabtm_hints"), e, i;
+		if(!hints) return;
+		for(i=0;i<li.length;li++){
+			row = document.createElement("DIV");
+			row.className = "topovicabtm_hint";
+			row.id = "topovicabtm_hint" + i;
+			row.innerHTML = li[i];
+			hints.appendChild(row);
+		}
+	}
+
 	
 	function edit(v){
-        // add container
+		// add container
 		var btm = document.createElement("DIV");
 		btm.className = "topovicabtm";
-		var styletmp = {zIndex: "10000", bottom: "0", position:"fixed", width:"100%", display:"none", "color":"red"};
+		var styletmp = {zIndex: "10000", backgroundColor:"white", bottom: "0", position:"fixed", width:"100%", "color":"red"};
 		apply_style(btm, styletmp);
 		document.body.appendChild(btm);
-		btm.style.display = "block";
 
-        // add rows container
-        var hints = document.createElement("DIV");
-        hints.className = "topovicabtm_hints";
-        btm.appendChild(hints);
+		// add rows container
+		var hints = document.createElement("DIV");
+		hints.id = "topovicabtm_hints";
+		btm.appendChild(hints);
 
-        // add input element
+		// add input element
 		var input = document.createElement("INPUT");
-		input.id = "tpvcinput";
+		input.id = "topovica_input";
 		var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
 		apply_style(input, styletmp);
 		input.addEventListener("focus", function(evt){
@@ -66,11 +78,11 @@
 		});
 		input.addEventListener("keydown", function(evt){
 			var c = evt.key;
-			if(c!="Enter") return;
-			exec_edit();
+			if(c=="Enter") exec_edit();
 		});
 		//TODO: implement autocomplete maybe, sometime.
-		input.addEventListener("change", function(evt){});
+		input.addEventListener("change", function(evt){
+		});
 		btm.appendChild(input);
 
 		input.focus();
@@ -79,8 +91,8 @@
 	}
 
 	function exec_edit(){
-        var input = document.getElementById("tpvcinput"), cmd="";
-        if(input) cmd = input.value.replace(/^:/,"").split(" ");
+		var input = document.getElementById("topovica_input"), cmd="";
+		if(input) cmd = input.value.replace(/^:/,"").split(" ");
 		uninsert();
 		unedit();
 		// do something
