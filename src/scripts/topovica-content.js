@@ -546,9 +546,19 @@
 		}
 
 		var firstmatch = function(){
+			// prioritise index
 			for(var i=0;i<sortedkeys.length;i++){
-				var k = sortedkeys[i], id=tabs[k].id, lowtitle = tabs[k].title.toLowerCase();
-				if(k.startsWith(searchstr) || lowtitle.includes(searchstr)){
+				var k = sortedkeys[i], id=tabs[k].id;
+				if(k.startsWith(searchstr)){
+					reset();
+					browser_command("tabto", id);
+					return;
+				}
+			}
+			// search titles
+			for(var i=0;i<sortedkeys.length;i++){
+				var k = sortedkeys[i], lowtitle = tabs[k].title.toLowerCase(), id=tabs[k].id;
+				if(lowtitle.includes(searchstr)){
 					reset();
 					browser_command("tabto", id);
 					return;
