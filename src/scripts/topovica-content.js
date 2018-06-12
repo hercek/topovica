@@ -43,29 +43,45 @@
 	}
 
 	function edit_fill_hints(li){
-		var hints = document.getElementById("topovicabtm_hints"), e, i;
+		var hints = document.getElementById("topovica_hints"), e, i, row;
 		if(!hints) return;
-		for(i=0;i<li.length;li++){
+		for(i=0;i<li.length;i++){
 			row = document.createElement("DIV");
-			row.className = "topovicabtm_hint";
-			row.id = "topovicabtm_hint" + i;
+			row.className = "topovica_hint";
+			row.id = "topovica_hint" + i;
 			row.innerHTML = li[i];
 			hints.appendChild(row);
 		}
 	}
 
+	function edit_change(evt){
+		var input = evt.target,
+			cmd = input.value.replace(/^:/,"").split(" "),
+			commanders = {
+				open: {hinter: function(){}},
+				tabnew: {hinter: function(){}}
+			},
+			defaultobj = {
+				hinter: function(){ edit_fill_hints(Object.keys(commanders)); }
+			},
+			changeobj = defaultobj;
+
+		if(cmd[0] in commanders) changeobj = commanders[cmd[0]];
+
+		changeobj.hinter(cmd);
+	}
 	
 	function edit(v){
 		// add container
 		var btm = document.createElement("DIV");
 		btm.className = "topovicabtm";
-		var styletmp = {zIndex: "10000", backgroundColor:"white", bottom: "0", position:"fixed", width:"100%", "color":"red"};
+		var styletmp = {fontSize: "11px", zIndex: "10000", backgroundColor:"white", bottom: "0", position:"fixed", width:"100%", "color":"red"};
 		apply_style(btm, styletmp);
 		document.body.appendChild(btm);
 
 		// add rows container
 		var hints = document.createElement("DIV");
-		hints.id = "topovicabtm_hints";
+		hints.id = "topovica_hints";
 		btm.appendChild(hints);
 
 		// add input element
@@ -81,13 +97,12 @@
 			if(c=="Enter") exec_edit();
 		});
 		//TODO: implement autocomplete maybe, sometime.
-		input.addEventListener("change", function(evt){
-		});
+		input.addEventListener("change", edit_change);
 		btm.appendChild(input);
 
 		input.focus();
 		input.value = v;
-		return firstfn;
+		edit_change({target:input});
 	}
 
 	function exec_edit(){
