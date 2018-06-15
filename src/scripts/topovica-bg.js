@@ -81,6 +81,36 @@ function find(cmd){
 	});
 }
 
+function open_hints(cmd){
+	// don't return results when there aren't search terms
+	var searchterm = cmd.args[0];
+	if(searchterm=="") return Promise.resolve([]);
+
+	function nores(err){
+		debug(`${err}`);
+		return [];
+	}
+
+	function res(results){
+		// please report me for ternary operator abuse
+		return results.filter(e => ("url" in e)).map(e => [(("title" in e)?e.title:""), e.url]);
+	}
+
+	// look in bookmarks
+	var p1 = browser.bookmarks.search(searchterm).then(res,nores);
+	// look in history
+	var p2 = browser.history.search({text:searchterm}).then(res, nores);
+
+	return Promise.all([p1,p2]).then(function(results){
+		var m = {};
+		// remove duplicates
+		results.forEach(arr => arr.forEach( e => { m[e[1]] = m[e[0]]; } ));
+		return Object.keys(m).map(k => [m[k], k]);
+	}, nores);
+	return p1;
+
+}
+
 function commands_receiver(cmd, sender, rsp){
 	debug(cmd);
 	debug(sender);
@@ -93,6 +123,7 @@ function commands_receiver(cmd, sender, rsp){
 		"g$": function(){ tabber(-1); },
 		"open": function(){ opener(sender.tab.id, cmd.args); },
 		"tabnew": function(){ tabnew(sender.tab.id, cmd.args); },
+		"open_hints": open_hints,
 		"tabto": function(cmd) { browser.tabs.update(cmd.args[0], {active:true}); },
 		"debug": function(){ DEBUG=true; },
 		"nodebug": function(){ DEBUG=false; },

@@ -43,6 +43,7 @@
 	}
 
 	function edit_fill_hints(li){
+		removeElementsByClass("topovica_hint");
 		var hints = document.getElementById("topovica_hints"), e, i, row;
 		if(!hints) return;
 		for(i=0;i<li.length;i++){
@@ -53,22 +54,64 @@
 			hints.appendChild(row);
 		}
 	}
+	
+	function edit_highlight_hint(offset){
+		var all_hints = document.getElementsByClassName("topovica_hint"),
+			l = all_hints.length,
+			e;
+		for(var i=0;i<l;i++){
+			e = all_hints[i];
+			e.style.backgroundColor = "white";
+		}
+		e = document.getElementById("topovica_hint"+offset);
+		e.style.backgroundColor = "yellow";
+	}
 
-	function edit_change(evt){
-		var input = evt.target,
-			cmd = input.value.replace(/^:/,"").split(" "),
-			commanders = {
-				open: {hinter: function(){}},
-				tabnew: {hinter: function(){}}
-			},
-			defaultobj = {
-				hinter: function(){ edit_fill_hints(Object.keys(commanders)); }
-			},
-			changeobj = defaultobj;
+	// options contain the following attributes: highlighted, enter and tab
+	// it is the responsibility of each command's hinter to 
+	// 1) obtain its hints,
+	// 2) call edit_clear_options
+	// 3) fill in its hints
+	// 4) provide behaviour for tabbing
+	// 5) provide behaviour for when enter is pressed
+	function edit_change(options){
+		return function(evt){
+			var input = evt.target,
+				cmd = input.value.replace(/^:/,"").split(" "),
+				hinters = {
+					open: open_hinter(evt, options),
+					tabnew: open_hinter(evt, options)
+				},
+				defaulthinter = function(cmd){
+					var commands = Object.keys(hinters).filter(e => e.startsWith(cmd[0]))
+					edit_clear_options(options);
+					edit_fill_hints(commands);
+					options.tab = function(offset){
+						var trueoffset = offset % commands.length;
+						edit_highlight_hint(trueoffset);
+					};
+					options.enter = function(offset){
+						var trueoffset = offset % commands.length;
+						input.value = ":" + commands[trueoffset] + " ";
+						// clear existing hints
+						removeElementsByClass("topovica_hint");
+						var chevt = document.createEvent("HTMLEvents");
+						chevt.initEvent("change", false, true);
+						input.dispatchEvent(chevt);
+					}
+				},
+				hinter = defaulthinter;
 
-		if(cmd[0] in commanders) changeobj = commanders[cmd[0]];
+			if(cmd[0] in hinters) hinter = hinters[cmd[0]];
 
-		changeobj.hinter(cmd);
+			hinter(cmd);
+		}
+	}
+
+	function edit_clear_options(options){
+		options.tab = null;
+		options.highlighted = false;
+		options.enter = null;
 	}
 	
 	function edit(v){
@@ -89,20 +132,41 @@
 		input.id = "topovica_input";
 		var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
 		apply_style(input, styletmp);
+		var options = {highlighted: false, tab:null, enter:null};
+		var offset = 0;
 		input.addEventListener("focus", function(evt){
 			evt.target.style.outline = "0px none black";
 		});
 		input.addEventListener("keydown", function(evt){
 			var c = evt.key;
-			if(c=="Enter") exec_edit();
+			if(c=="Enter"){
+				if(!options.enter) return;
+				options.enter(offset);
+			}
+
+			if(c=="Tab"){
+				evt.preventDefault();
+				evt.stopPropagation();
+				evt.stopImmediatePropagation();
+				if(options.tab==null) return;
+				if(options.highlighted) offset++;
+				options.highlighted = true;
+				options.tab(offset);
+			}
 		});
 		//TODO: implement autocomplete maybe, sometime.
-		input.addEventListener("change", edit_change);
+		var chfn = edit_change(options);
+		var oldval = v;
+		input.addEventListener("keyup", evt => {
+			if(input.value==oldval) return;
+			oldval = input.value;
+			chfn(evt)
+		});
 		btm.appendChild(input);
 
 		input.focus();
 		input.value = v;
-		edit_change({target:input});
+		chfn({target:input});
 	}
 
 	function exec_edit(){
@@ -112,7 +176,6 @@
 		unedit();
 		// do something
 		var colons = {
-			"o": opener,
 			"open": opener,
 			"tabnew": tabnew,
 			"set": setter
@@ -142,6 +205,30 @@
 		var args = ["open"];
 		for(var i=0;i<arguments.length;i++) args.push(arguments[i]);
 		browser_command.apply(null, args);
+	}
+
+	// returns hinter for open and tabnew
+	function open_hinter(evt, options){
+		return function(cmd){
+			// links should be an array where each element is an array containing [title, link]
+			function gf(links){
+				edit_clear_options(options);
+				var hlinks = links.map(l =>  l.join(" "));	
+				edit_fill_hints(hlinks);
+				options.tab = function(offset){
+					var trueoffset = offset % links.length;
+					edit_highlight_hint(trueoffset);
+				};
+				options.enter = function(offset){
+					if(!options.highlighted) return exec_edit();
+					var trueoffset = offset % links.length;
+					evt.target.value = ":" + cmd[0] + " " + links[trueoffset][1];
+					exec_edit()
+				};
+			}
+
+			browser_command("open_hints", cmd.slice(1).join(" ")).then(gf);
+		}
 	}
 	// ":" functions end
 
