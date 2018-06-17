@@ -37,7 +37,6 @@
 	}
 
 	// ":" functions begin
-	//TODO convert this to the more self-contained style we use for buffers
 	function unedit(){
 		removeElementsByClass("topovicabtm");
 	}
@@ -80,7 +79,8 @@
 				cmd = input.value.replace(/^:/,"").split(" "),
 				hinters = {
 					open: open_hinter(evt, options),
-					tabnew: open_hinter(evt, options)
+					tabnew: open_hinter(evt, options),
+					buffer: buffer_hinter(evt, options)
 				},
 				defaulthinter = function(cmd){
 					var commands = Object.keys(hinters).filter(e => e.startsWith(cmd[0]))
@@ -137,6 +137,8 @@
 		input.addEventListener("focus", function(evt){
 			evt.target.style.outline = "0px none black";
 		});
+
+		// handles when user presses Enter or Tab
 		input.addEventListener("keydown", function(evt){
 			var c = evt.key;
 			if(c=="Enter"){
@@ -154,9 +156,12 @@
 				options.tab(offset);
 			}
 		});
-		//TODO: implement autocomplete maybe, sometime.
+
+		// create the change handler, which populates the hinter
 		var chfn = edit_change(options);
 		var oldval = v;
+		// since "change" only triggers when the input loses focus, we need to use
+		// keyup event instead
 		input.addEventListener("keyup", evt => {
 			if(input.value==oldval) return;
 			oldval = input.value;
@@ -166,6 +171,8 @@
 
 		input.focus();
 		input.value = v;
+
+		// handle initial value
 		chfn({target:input});
 	}
 
@@ -215,10 +222,13 @@
 				edit_clear_options(options);
 				var hlinks = links.map(l =>  l.join(" "));	
 				edit_fill_hints(hlinks);
+				// called when user presses tab; switches between options
 				options.tab = function(offset){
 					var trueoffset = offset % links.length;
 					edit_highlight_hint(trueoffset);
 				};
+				// called when user presses enter; if option is highlighted,
+				// fill input value with highlighted option before calling exec_edit
 				options.enter = function(offset){
 					if(!options.highlighted) return exec_edit();
 					var trueoffset = offset % links.length;
@@ -228,6 +238,62 @@
 			}
 
 			browser_command("open_hints", cmd.slice(1).join(" ")).then(gf);
+		}
+	}
+
+	// returns buffer command's hinter
+	function buffer_hinter(evt, options){
+		return function(cmd){
+			function gf(alltabs){
+				edit_clear_options(options);
+				var tabs = {}, searchstr = cmd.slice(1).join(" ");
+				// fill tabs with only relevant results
+				Object.keys(alltabs).filter(k => k.startsWith(searchstr) || alltabs[k].title.toLowerCase().includes(searchstr)).forEach(k => tabs[k] = alltabs[k]);
+
+				var sortedkeys = Object.keys(tabs).sort((a,b)=>parseInt(a)-parseInt(b));
+				var displayed = sortedkeys.map(k => `${k}: ${tabs[k].title}`);
+
+				var firstmatch = function(){
+					// prioritise index
+					for(var i=0;i<sortedkeys.length;i++){
+						var k = sortedkeys[i], id=tabs[k].id;
+						if(k.startsWith(searchstr)){
+							return id;
+						}
+					}
+					// search titles
+					for(var i=0;i<sortedkeys.length;i++){
+						var k = sortedkeys[i], lowtitle = tabs[k].title.toLowerCase(), id=tabs[k].id;
+						if(lowtitle.includes(searchstr)){
+							return id;
+						}
+					}
+				}();
+
+				edit_fill_hints(displayed);
+				// called when user presses tab; switches between options
+				options.tab = function(offset){
+					if(sortedkeys.length<1) return;
+					var trueoffset = offset % sortedkeys.length;
+					edit_highlight_hint(trueoffset);
+				};
+				// called when user presses enter; if option is highlighted,
+				// fill input value with highlighted option before calling exec_edit
+				options.enter = function(offset){
+					if(sortedkeys.length<1) return;
+					if(!options.highlighted){
+						reset();
+						browser_command("tabto", firstmatch);
+						return;
+					}
+
+					var trueoffset = offset % sortedkeys.length;
+					reset();
+					browser_command("tabto", tabs[sortedkeys[trueoffset]].id)
+					return;
+				};
+			}
+			browser_command("b").then(gf);
 		}
 	}
 	// ":" functions end
@@ -293,11 +359,6 @@
 		};
 	}
 
-	// delete bufferpicker div
-	function delete_bufferpicker(){
-		removeElementsByClass("topovica_bufferpicker");
-	}
-
 	function delete_finder(){
 		if(currfind && currfind.highlighted){
 			currfind.highlighted=false;
@@ -349,8 +410,6 @@
 		"/": finder,
 		"n": function() { return find_next(false); },
 		"N": function() { return find_next(true); },
-		// b: unlike in vimperator, this doesn't go into edit mode
-		"b": function(){ return bufferpicker(); },
 		// G
 		"G": function(){
 			var limit = Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight) - window.innerHeight;
@@ -454,7 +513,6 @@
 		}
 		window.getSelection().removeAllRanges();
 		unfollow();
-		delete_bufferpicker();
 		delete_finder();
 		next = firstfn;
 		kunext = null;
@@ -481,7 +539,8 @@
 			// input commands need to be here cos if we use keydown, the character will be output
 			// into the input box when it keyups, i.e. we will end up with "::"
 			":": function(){ edit(":"); },
-			"o": function(){ if(!controlled) edit(":open "); }
+			"o": function(){ if(!controlled) edit(":open "); },
+			"b": function(){ edit(":buffer "); }
 		};
 
 		if(c in mods){
@@ -605,94 +664,6 @@
 			}
 			idx++;
 		}
-	}
-
-	// takes care of switching buffers
-	function bufferpicker(){
-		var tabs = {}, browcntr = null, bp = null, binput = null,
-		searchstr = "", sortedkeys = [];
-		// add bufferpicker 
-		var add_bufferpicker = function(alltabs){
-			tabs = alltabs;
-			bp = document.createElement("DIV");
-			bp.className = "topovica_bufferpicker";
-			bp.id = "topovica_bufferpicker";
-			var styletmp = {fontSize: "11px", backgroundColor:"white", zIndex:"10000", bottom: "0", position:"fixed", width:"100%", "color":"red"};
-			apply_style(bp, styletmp);
-			document.body.appendChild(bp);
-
-			browcntr = document.createElement("DIV");
-			browcntr.id = "topovica_bufferpicker_row_container";
-			bp.appendChild(browcntr);
-	
-			add_brows();
-			add_binput();
-		};
-	
-		var add_brows = function(){
-			sortedkeys = Object.keys(tabs).sort((a,b)=>parseInt(a)-parseInt(b));
-	
-			sortedkeys.forEach(k=>{
-				var title = tabs[k].title,
-					lowtitle = title.toLowerCase();
-				if(!k.startsWith(searchstr) && !lowtitle.includes(searchstr)) return;
-				var brow = document.createElement("DIV");
-				brow.className = "topovica_bufferpicker_row";
-				brow.innerHTML = `${k}: ${title}`;
-				browcntr.appendChild(brow);
-			})
-		};
-
-		var add_binput = function(){
-			binput = document.createElement("INPUT");
-			binput.className = "topovica_bufferpicker_input";
-			binput.readOnly = true;
-			binput.value = `:b ${searchstr}`;
-			var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
-			apply_style(binput, styletmp);
-			bp.appendChild(binput);
-			binput.focus();
-			binput.onkeypress = binputkeypress;
-		}
-	
-		var del_brows = function(){
-			removeElementsByClass("topovica_bufferpicker_row");
-		}
-
-		var firstmatch = function(){
-			// prioritise index
-			for(var i=0;i<sortedkeys.length;i++){
-				var k = sortedkeys[i], id=tabs[k].id;
-				if(k.startsWith(searchstr)){
-					reset();
-					browser_command("tabto", id);
-					return;
-				}
-			}
-			// search titles
-			for(var i=0;i<sortedkeys.length;i++){
-				var k = sortedkeys[i], lowtitle = tabs[k].title.toLowerCase(), id=tabs[k].id;
-				if(lowtitle.includes(searchstr)){
-					reset();
-					browser_command("tabto", id);
-					return;
-				}
-			}
-		}
-
-		var binputkeypress = function(evt){
-			var c = evt.key;
-			if(c=="Enter"){
-				firstmatch();
-			}
-			searchstr = c=="Backspace"?searchstr.substr(0,searchstr.length-1):searchstr+c;
-			binput.value = `:b ${searchstr}`;
-			del_brows();
-			add_brows();
-		};
-		browser_command("b").then(add_bufferpicker, reset);
-	
-		return firstfn;
 	}
 
 	checkFocus(); // because refresh doesn't trigger focus event

@@ -107,7 +107,6 @@ function open_hints(cmd){
 		results.forEach(arr => arr.forEach( e => { m[e[1]] = m[e[0]]; } ));
 		return Object.keys(m).map(k => [m[k], k]);
 	}, nores);
-	return p1;
 
 }
 
