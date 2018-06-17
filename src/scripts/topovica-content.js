@@ -80,25 +80,31 @@
 				hinters = {
 					open: open_hinter(evt, options),
 					tabnew: open_hinter(evt, options),
-					buffer: buffer_hinter(evt, options)
+					buffer: buffer_hinter(evt, options),
+					set: function(){
+						edit_clear_options(options);
+						options.enter = function(){
+							exec_edit();
+						};
+					}
 				},
 				defaulthinter = function(cmd){
 					var commands = Object.keys(hinters).filter(e => e.startsWith(cmd[0]))
 					edit_clear_options(options);
 					edit_fill_hints(commands);
 					options.tab = function(offset){
-						var trueoffset = offset % commands.length;
+						var trueoffset = modulo(offset, commands.length);
 						edit_highlight_hint(trueoffset);
 					};
 					options.enter = function(offset){
-						var trueoffset = offset % commands.length;
+						var trueoffset = modulo(offset, commands.length);
 						input.value = ":" + commands[trueoffset] + " ";
 						// clear existing hints
 						removeElementsByClass("topovica_hint");
 						var chevt = document.createEvent("HTMLEvents");
 						chevt.initEvent("change", false, true);
 						input.dispatchEvent(chevt);
-					}
+					};
 				},
 				hinter = defaulthinter;
 
@@ -109,6 +115,7 @@
 	}
 
 	function edit_clear_options(options){
+		options.offset = 0;
 		options.tab = null;
 		options.highlighted = false;
 		options.enter = null;
@@ -132,8 +139,7 @@
 		input.id = "topovica_input";
 		var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
 		apply_style(input, styletmp);
-		var options = {highlighted: false, tab:null, enter:null};
-		var offset = 0;
+		var options = {offset:0, highlighted: false, tab:null, enter:null};
 		input.addEventListener("focus", function(evt){
 			evt.target.style.outline = "0px none black";
 		});
@@ -143,7 +149,7 @@
 			var c = evt.key;
 			if(c=="Enter"){
 				if(!options.enter) return;
-				options.enter(offset);
+				options.enter(options.offset);
 			}
 
 			if(c=="Tab"){
@@ -151,9 +157,11 @@
 				evt.stopPropagation();
 				evt.stopImmediatePropagation();
 				if(options.tab==null) return;
-				if(options.highlighted) offset++;
+				if(options.highlighted){
+					options.offset = shifted?options.offset-1:options.offset+1;
+				}
 				options.highlighted = true;
-				options.tab(offset);
+				options.tab(options.offset);
 			}
 		});
 
@@ -225,14 +233,14 @@
 				edit_fill_hints(hlinks);
 				// called when user presses tab; switches between options
 				options.tab = function(offset){
-					var trueoffset = offset % links.length;
+					var trueoffset = modulo(offset, links.length);
 					edit_highlight_hint(trueoffset);
 				};
 				// called when user presses enter; if option is highlighted,
 				// fill input value with highlighted option before calling exec_edit
 				options.enter = function(offset){
 					if(!options.highlighted) return exec_edit();
-					var trueoffset = offset % links.length;
+					var trueoffset = modulo(offset, links.length);
 					evt.target.value = ":" + cmd[0] + " " + links[trueoffset][1];
 					exec_edit()
 				};
@@ -275,7 +283,7 @@
 				// called when user presses tab; switches between options
 				options.tab = function(offset){
 					if(sortedkeys.length<1) return;
-					var trueoffset = offset % sortedkeys.length;
+					var trueoffset = modulo(offset, sortedkeys.length);
 					edit_highlight_hint(trueoffset);
 				};
 				// called when user presses enter; if option is highlighted,
@@ -288,7 +296,7 @@
 						return;
 					}
 
-					var trueoffset = offset % sortedkeys.length;
+					var trueoffset = modulo(offset, sortedkeys.length);
 					reset();
 					browser_command("tabto", tabs[sortedkeys[trueoffset]].id)
 					return;
@@ -636,9 +644,7 @@
 	function find_next(backwards){
 		if(!currfind.highlighted) return firstfn;
 		currfind.index = backwards?currfind.index-1:currfind.index+1;
-		currfind.index = currfind.index % currfind.ranges.length;
-		// ugh. no real mod operator in js
-		currfind.index = currfind.index<0?currfind.ranges.length+currfind.index:currfind.index;
+		currfind.index = modulo(currfind.index, currfind.ranges.length);
 
 		var rd = currfind.ranges[currfind.index], selection = window.getSelection(), range = document.createRange(),
 			walker = document.createTreeWalker(document, window.NodeFilter.SHOW_TEXT,null,false),
@@ -665,6 +671,12 @@
 			}
 			idx++;
 		}
+	}
+
+	// our own modulo function
+	function modulo(a,b){
+		var r = a % b;
+		return r<0?b+r:r;
 	}
 
 	checkFocus(); // because refresh doesn't trigger focus event
