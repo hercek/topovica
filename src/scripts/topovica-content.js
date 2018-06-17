@@ -12,7 +12,7 @@
 	var firstfn = null,
 		gunit = null;
 
-	var DEBUG = true;
+	var DEBUG = false;
 	var modes = {"command":0,"insert":1}, mode = modes.command;
 
 	// current search term
@@ -176,6 +176,7 @@
 		chfn({target:input});
 	}
 
+	// this is inconsistent with the buffer stuff, but oh well
 	function exec_edit(){
 		var input = document.getElementById("topovica_input"), cmd="";
 		if(input) cmd = input.value.replace(/^:/,"").split(" ");
