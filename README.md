@@ -14,6 +14,8 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `gg`, `G` &rarr; top of page, bottom of page
 
+`ge`, `gE` &rarr; moves to the next and previous scrollable elements, respectively. (impacts `h`,`j`,`k`,`l`)
+
 `/` &rarr; search page for text matches
 
 #### Tab movements
@@ -53,3 +55,9 @@ We currently detect insert mode when currently focused element is `input`, `text
 I referred to existing projects when I encountered functionality I couldn't figure out how to implement.
 
 - `:open`: [vim-vixen](https://github.com/ueokande/vim-vixen)
+
+## Known issues
+
+1. `ge` and `gE` do not work with frames
+
+2. `CTRL-O` sometimes lands you in the previous page with `:open` activated if you don't release the "O" button quickly enough.

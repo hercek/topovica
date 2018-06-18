@@ -12,7 +12,7 @@
 	var firstfn = null,
 		gunit = null;
 
-	var DEBUG = true;
+	var DEBUG = false;
 	var modes = {"command":0,"insert":1}, mode = modes.command;
 
 	// current search term
@@ -232,7 +232,7 @@
 			// links should be an array where each element is an array containing [title, link]
 			function gf(links){
 				edit_clear_options(options);
-				var hlinks = links.map(l =>  l.join(" "));	
+				var hlinks = links.map(l => l.join(" "));	
 				edit_fill_hints(hlinks);
 				// called when user presses tab; switches between options
 				options.tab = function(offset){
@@ -317,42 +317,55 @@
 	}
 
 	// navigate scrollE
-	function change_scroll(root, backwards){
-		var children = root.children, clen = children.length;
-		if(root==scrollE){
-			var next = null;
-			if(backwards){
-				if(root.previousElementSibling) next = root.previousElementSibling;
-				else if(root.parentElement) next = root.parentElement;
-			} else {
-				if(root.nextElementSibling) next = root.nextElementSibling;
-				else if(clen>0) next = children[0];
+	function change_scroll(backwards){
+		var all_scrolls = [document.documentElement];
+		populate_all_scrolls(document.documentElement, all_scrolls)
+		debug(`all_scrolls length is ${all_scrolls.length}`)
+		var i, nextscroll=null;
+		for(i=0;i<all_scrolls.length;i++){
+			if(scrollE==all_scrolls[i]){
+				nextscroll = backwards?i-1:i+1;
+				break
 			}
-			if(next){
-				scrollE = next;
-				flash_scroll();
-			}
-			return true;
 		}
+		if(nextscroll == null)
+			scrollE = document.documentElement;
+		else
+			scrollE = all_scrolls[nextscroll];
+		flash_scroll();
+	}
+
+	function populate_all_scrolls(e, all_scrolls){
+		if(scrollable(e)){
+			all_scrolls.push(e);
+		}
+		var children = e.children, clen = children.length;
 		for(var i=0;i<clen;i++){
-			if(change_scroll(children[i], backwards)) return true;
+			populate_all_scrolls(children[i], all_scrolls)
 		}
-		if(root.nextElementSibling){
-			if(change_scroll(root.nextElementSibling, backwards)) return true;
-		}
-		return false;
+	}
+
+	function scrollable_style(e) {
+		let { overflowX, overflowY } = window.getComputedStyle(e);
+		return !(overflowX !== 'scroll' && overflowX !== 'auto' &&
+			overflowY !== 'scroll' && overflowY !== 'auto');
+	}
+
+	function overflowed(e) {
+		return e.scrollWidth > e.clientWidth ||
+			e.scrollHeight > e.clientHeight;
+	}
+	
+	function scrollable(e){
+		return scrollable_style(e) && overflowed(e);
 	}
 
 	// flash scrollE for a sec
 	function flash_scroll(){
-		var el = document.createElement("DIV"),
-			rect = scrollE.getBoundingClientRect(),
-			styletmp = {zIndex:"10000", backgroundColor:"yellow", position:"absolute", opacity:"0.7", top:`${rect.top}px`, left:`${rect.left}px`, width:`${rect.right-rect.left}px`, height:`${rect.bottom-rect.top}px`};
-		el.className = "topovica_tmp_highlight";
-		apply_style(el,styletmp);
-
-		document.body.appendChild(el);
-		window.setTimeout(()=>{removeElementsByClass("topovica_tmp_highlight")}, 1000);
+		var oldcolor = scrollE.style.backgroundColor;
+		scrollE.scrollIntoView({behavior:"auto",block:"center",inline:"center"});
+		scrollE.style.backgroundColor = "yellow";
+		window.setTimeout(()=>{ scrollE.style.backgroundColor = oldcolor; },500);
 	}
 
 	function init_follower(newtab){
@@ -501,7 +514,8 @@
 	// function dealing with "g" possible completions are "^", "$", "g", "t" and "T"
 	gunit = chainlink({
 		"g": function(){ window.scrollTo(0,0); return firstfn; },
-		"e": function(){ change_scroll(document.documentElement,false); return firstfn; },
+		"e": function(){ change_scroll(false); return firstfn; },
+		"E": function(){ change_scroll(true); return firstfn; },
 		"t": function(){ browser_command("gt"); return firstfn; },
 		"T": function(){ browser_command("gT"); return firstfn; },
 		"^": function(){ browser_command("g^"); return firstfn; },
