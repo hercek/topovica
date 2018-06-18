@@ -318,7 +318,7 @@
 
 	// navigate scrollE
 	function change_scroll(backwards){
-		var all_scrolls = [document.documentElement];
+		var all_scrolls = [];
 		populate_all_scrolls(document.documentElement, all_scrolls)
 		debug(`all_scrolls length is ${all_scrolls.length}`)
 		var i, nextscroll=null;
@@ -336,7 +336,7 @@
 	}
 
 	function populate_all_scrolls(e, all_scrolls){
-		if(scrollable(e)){
+		if(scrollable(e) || e == document.documentElement){
 			all_scrolls.push(e);
 		}
 		var children = e.children, clen = children.length;
