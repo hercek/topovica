@@ -20,7 +20,7 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 `gt`, `gT`, `g^`, `g$` &rarr; next tab, previous tab, first tab, last tab, respectively
 
-`b` &rarr; brings up the buffer selector interface. type in the index of the buffer or the title of the buffer. pressing `Enter` jumps to first match
+`:buffer`, `b` &rarr; brings up the buffer selector interface. typing will search buffers for matching indexes or titles, displaying them as hints. `Tab` or `Shift+Tab` cycles between hints. Pressing `Enter` jumps to the first match if no hint is selected, else to the selected hint
 
 #### Tab creation/deletion
 
@@ -30,9 +30,9 @@ It's an acronym for "The Only Parts Of Vimperator I Care About". This project ex
 
 #### Navigation
 
-`:open`, `:o`, `o` &rarr; opens a url or does a search in the current tab
+`:open`, `:o`, `o` &rarr; opens a url or does a search in the current tab. hints work the same way as `:buffer`
 
-`:tabnew` &rarr; opens a url or does a search in a new tab
+`:tabnew` &rarr; opens a url or does a search in a new tab. hints work the same way as `:buffer`
 
 `CTRL-I`, `CTRL-O` &rarr; forward and back
 

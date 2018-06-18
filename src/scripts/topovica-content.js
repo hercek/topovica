@@ -12,13 +12,16 @@
 	var firstfn = null,
 		gunit = null;
 
-	var DEBUG = false;
+	var DEBUG = true;
 	var modes = {"command":0,"insert":1}, mode = modes.command;
 
 	// current search term
 	var currfind = null;
 
 	var focd = null;
+
+	// current scroll element
+	var scrollE = document.documentElement;
 
 	var fint = null;
 
@@ -309,8 +312,47 @@
 
 	// movement function. "by" is an array specifying x and y offsets to scroll by
 	function move(by){
-		window.scrollBy.apply(window, by);
+		focd.scrollBy.apply(scrollE, by);
 		return firstfn;
+	}
+
+	// navigate scrollE
+	function change_scroll(root, backwards){
+		var children = root.children, clen = children.length;
+		if(root==scrollE){
+			var next = null;
+			if(backwards){
+				if(root.previousElementSibling) next = root.previousElementSibling;
+				else if(root.parentElement) next = root.parentElement;
+			} else {
+				if(root.nextElementSibling) next = root.nextElementSibling;
+				else if(clen>0) next = children[0];
+			}
+			if(next){
+				scrollE = next;
+				flash_scroll();
+			}
+			return true;
+		}
+		for(var i=0;i<clen;i++){
+			if(change_scroll(children[i], backwards)) return true;
+		}
+		if(root.nextElementSibling){
+			if(change_scroll(root.nextElementSibling, backwards)) return true;
+		}
+		return false;
+	}
+
+	// flash scrollE for a sec
+	function flash_scroll(){
+		var el = document.createElement("DIV"),
+			rect = scrollE.getBoundingClientRect(),
+			styletmp = {zIndex:"10000", backgroundColor:"yellow", position:"absolute", opacity:"0.7", top:`${rect.top}px`, left:`${rect.left}px`, width:`${rect.right-rect.left}px`, height:`${rect.bottom-rect.top}px`};
+		el.className = "topovica_tmp_highlight";
+		apply_style(el,styletmp);
+
+		document.body.appendChild(el);
+		window.setTimeout(()=>{removeElementsByClass("topovica_tmp_highlight")}, 1000);
 	}
 
 	function init_follower(newtab){
@@ -459,6 +501,7 @@
 	// function dealing with "g" possible completions are "^", "$", "g", "t" and "T"
 	gunit = chainlink({
 		"g": function(){ window.scrollTo(0,0); return firstfn; },
+		"e": function(){ change_scroll(document.documentElement,false); return firstfn; },
 		"t": function(){ browser_command("gt"); return firstfn; },
 		"T": function(){ browser_command("gT"); return firstfn; },
 		"^": function(){ browser_command("g^"); return firstfn; },
@@ -579,6 +622,12 @@
 		while(elements.length>0) elements[0].remove();
 	}
 
+	// our own modulo function
+	function modulo(a,b){
+		var r = a % b;
+		return r<0?b+r:r;
+	}
+
 	function apply_style(e, styler){
 		for(var s in styler) e.style[s] = styler[s];
 	}
@@ -671,12 +720,6 @@
 			}
 			idx++;
 		}
-	}
-
-	// our own modulo function
-	function modulo(a,b){
-		var r = a % b;
-		return r<0?b+r:r;
 	}
 
 	checkFocus(); // because refresh doesn't trigger focus event
