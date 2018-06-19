@@ -400,9 +400,9 @@
 		// paint
 		vislinks.forEach(k => {
 			var ln = links[k], display = k.substr(currstr.length),
-				rect = ln.getBoundingClientRect(),
-				left = window.scrollX+rect.left,
-				top = window.scrollY+rect.top,
+				rects = ln.getClientRects(),
+				left = window.scrollX+rects[0].left,
+				top = window.scrollY+rects[0].top,
 				e = document.createElement("SPAN");
 			e.id = "follownum" + k;
 			e.className = "follownum";
