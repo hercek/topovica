@@ -312,7 +312,7 @@
 
 	// movement function. "by" is an array specifying x and y offsets to scroll by
 	function move(by){
-		focd.scrollBy.apply(scrollE, by);
+		scrollE.scrollBy.apply(scrollE, by);
 		return firstfn;
 	}
 
@@ -513,7 +513,7 @@
 
 	// function dealing with "g" possible completions are "^", "$", "g", "t" and "T"
 	gunit = chainlink({
-		"g": function(){ window.scrollTo(0,0); return firstfn; },
+		"g": function(){ scrollE.scrollTo(0,0); return firstfn; },
 		"e": function(){ change_scroll(false); return firstfn; },
 		"E": function(){ change_scroll(true); return firstfn; },
 		"t": function(){ browser_command("gt"); return firstfn; },
