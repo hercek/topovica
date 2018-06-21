@@ -63,3 +63,7 @@ I referred to existing projects when I encountered functionality I couldn't figu
 2. `CTRL-O` sometimes lands you in the previous page with `:open` activated if you don't release the "O" button quickly enough.
 
 3. `:open` and `:tabnew` occasionally cause an "undefined" hint to be displayed. This is irritating but doesn't really affect my usage, so I don't care. Feel free to suggest a patch if you can be arsed to find out why.
+
+## License
+
+[MIT](LICENSE)
