@@ -93,7 +93,7 @@ function open_hints(cmd){
 
 	function res(results){
 		// please report me for ternary operator abuse
-		return results.filter(e => ("url" in e)).map(e => [(("title" in e)?e.title:""), e.url]);
+		return results.filter(e => ("url" in e && e.url)).map(e => [(("title" in e)?e.title:""), e.url]);
 	}
 
 	// look in bookmarks
@@ -104,7 +104,7 @@ function open_hints(cmd){
 	return Promise.all([p1,p2]).then(function(results){
 		var m = {};
 		// remove duplicates
-		results.forEach(arr => arr.forEach( e => { m[e[1]] = m[e[0]]; } ));
+		results.forEach(arr => arr.forEach( e => { m[e[1]] = e[0]; } ));
 		return Object.keys(m).map(k => [m[k], k]);
 	}, nores);
 
