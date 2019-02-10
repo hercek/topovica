@@ -16,7 +16,7 @@ This is a simplified subset of [Topovica](https://addons.mozilla.org/en-US/firef
 
 #### Misc
 
-`y` &rarr; copies the current url to the clipboard
+`,` &rarr; copies the current url to the clipboard
 
 ### Insert mode
 
