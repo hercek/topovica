@@ -1,45 +1,40 @@
 /**
- * So how we are going to do this is, next will hold the next function to be executed.
- * All the chained functions should accept a keyCode argument and return next nextfn,
- * optionally executing an action along the way. Invalid combinations will reset firstfn
- * as next. Hope this approach isn't too inefficient.
+ * activeFn holds the function to be executed at the nearest key-down event.
+ * All the chained functions should accept a keyCode argument and return the next activeFn,
+ * optionally executing an action along the way. Invalid combinations will reset activeFn
+ * to firstFn.
  */
 (function(){
 	if(window.hasRun) return;
 	window.hasRun = true;
 
-	// declare chain functions
-	var firstfn = null,
-		gunit = null;
+	function debug(){
+		console.log.apply(null, arguments);
+	}
 
-	var DEBUG = false;
+	// keystroke lexer entry point
+	var firstFn = null;
+	// current keystroke lexer state
+	var activeFn = null;
+
 	var modes = {"command":0,"insert":1}, mode = modes.command;
 
-	// current search term
-	var currfind = null;
-
-	var focd = null;
-
-	// current scroll element
-	var scrollE = document.documentElement;
-
-	var fint = null;
-
+	var focusedElement = null;
+	var focusIntervalId = null;
 	function checkFocus(){
 		var inserttags = {"SELECT":true, "TEXTAREA":true, "INPUT":true};
 		// idempotence ftw.
-		if(fint){
-			clearInterval(fint);
+		if(focusIntervalId){
+			clearInterval(focusIntervalId);
 		}
-		fint = window.setInterval(function(){
+		focusIntervalId = window.setInterval(function(){
 			var curr = document.activeElement;
-			if(focd==curr) return;
-			focd = curr;
-			if(focd.tagName in inserttags) mode = modes.insert;
+			if(focusedElement==curr) return;
+			focusedElement = curr;
+			if(focusedElement.tagName in inserttags) mode = modes.insert;
 		}, 20);
 	}
 
-	// ":" functions begin
 	function unedit(){
 		removeElementsByClass("topovicabtm");
 	}
@@ -80,17 +75,7 @@
 		return function(evt){
 			var input = evt.target,
 				cmd = input.value.replace(/^:/,"").split(" "),
-				hinters = {
-					open: open_hinter(evt, options),
-					tabnew: open_hinter(evt, options),
-					buffer: buffer_hinter(evt, options),
-					set: function(){
-						edit_clear_options(options);
-						options.enter = function(){
-							exec_edit();
-						};
-					}
-				},
+				hinters = { buffer: buffer_hinter(evt, options) },
 				defaulthinter = function(cmd){
 					var commands = Object.keys(hinters).filter(e => e.startsWith(cmd[0]))
 					edit_clear_options(options);
@@ -128,7 +113,7 @@
 		// add container
 		var btm = document.createElement("DIV");
 		btm.className = "topovicabtm";
-		var styletmp = {fontSize: "11px", zIndex: "10000", backgroundColor:"white", bottom: "0", position:"fixed", width:"100%", "color":"red"};
+		var styletmp = {fontSize: "16px", zIndex: "10000", backgroundColor:"white", bottom: "0", position:"fixed", width:"100%", "color":"red"};
 		apply_style(btm, styletmp);
 		document.body.appendChild(btm);
 
@@ -140,7 +125,7 @@
 		// add input element
 		var input = document.createElement("INPUT");
 		input.id = "topovica_input";
-		var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
+		var styletmp = {fontSize: "16px", outlineStyle:"none", width:"100%", "color":"red"};
 		apply_style(input, styletmp);
 		var options = {offset:0, highlighted: false, tab:null, enter:null};
 		input.addEventListener("focus", function(evt){
@@ -185,72 +170,6 @@
 
 		// handle initial value
 		chfn({target:input});
-	}
-
-	// this is inconsistent with the buffer stuff, but oh well
-	function exec_edit(){
-		var input = document.getElementById("topovica_input"), cmd="";
-		if(input) cmd = input.value.replace(/^:/,"").split(" ");
-		uninsert();
-		unedit();
-		// do something
-		var colons = {
-			"open": opener,
-			"tabnew": tabnew,
-			"set": setter
-		};
-		if(!(cmd[0] in colons)) return;
-
-		colons[cmd[0]].apply(null, cmd.slice(1, cmd.length));
-	}
-
-	function setter(){
-		var settees = {
-			"debug": function(){ DEBUG=true; browser_command("debug"); },
-			"nodebug": function(){ DEBUG=false; browser_command("nodebug"); }
-		}
-		if(arguments[0] in settees){
-			settees[arguments[0]]();
-		}
-	}
-	
-	function tabnew(){
-		var args = ["tabnew"];
-		for(var i=0;i<arguments.length;i++) args.push(arguments[i]);
-		browser_command.apply(null, args);
-	}
-
-	function opener(){
-		var args = ["open"];
-		for(var i=0;i<arguments.length;i++) args.push(arguments[i]);
-		browser_command.apply(null, args);
-	}
-
-	// returns hinter for open and tabnew
-	function open_hinter(evt, options){
-		return function(cmd){
-			// links should be an array where each element is an array containing [title, link]
-			function gf(links){
-				edit_clear_options(options);
-				var hlinks = links.map(l => l.join(" "));	
-				edit_fill_hints(hlinks);
-				// called when user presses tab; switches between options
-				options.tab = function(offset){
-					var trueoffset = modulo(offset, links.length);
-					edit_highlight_hint(trueoffset);
-				};
-				// called when user presses enter; if option is highlighted,
-				// fill input value with highlighted option before calling exec_edit
-				options.enter = function(offset){
-					if(!options.highlighted) return exec_edit();
-					var trueoffset = modulo(offset, links.length);
-					evt.target.value = ":" + cmd[0] + " " + links[trueoffset][1];
-					exec_edit()
-				};
-			}
-
-			browser_command("open_hints", cmd.slice(1).join(" ")).then(gf);
-		}
 	}
 
 	// returns buffer command's hinter
@@ -305,79 +224,29 @@
 					return;
 				};
 			}
-			browser_command("b").then(gf);
+			browser_command("getTabs").then(gf);
 		}
 	}
 	// ":" functions end
 
-	// movement function. "by" is an array specifying x and y offsets to scroll by
-	function move(by){
-		scrollE.scrollBy.apply(scrollE, by);
-		return firstfn;
-	}
-
-	// navigate scrollE
-	function change_scroll(backwards){
-		var all_scrolls = [];
-		populate_all_scrolls(document.documentElement, all_scrolls)
-		debug(`all_scrolls length is ${all_scrolls.length}`)
-		var i, nextscroll=null;
-		for(i=0;i<all_scrolls.length;i++){
-			if(scrollE==all_scrolls[i]){
-				nextscroll = backwards?i-1:i+1;
-				break
-			}
-		}
-		if(nextscroll == null)
-			scrollE = document.documentElement;
-		else
-			scrollE = all_scrolls[nextscroll];
-		flash_scroll();
-	}
-
-	function populate_all_scrolls(e, all_scrolls){
-		if(scrollable(e) || e == document.documentElement){
-			all_scrolls.push(e);
-		}
-		var children = e.children, clen = children.length;
-		for(var i=0;i<clen;i++){
-			populate_all_scrolls(children[i], all_scrolls)
-		}
-	}
-
-	function scrollable_style(e) {
-		let { overflowX, overflowY } = window.getComputedStyle(e);
-		return !(overflowX !== 'scroll' && overflowX !== 'auto' &&
-			overflowY !== 'scroll' && overflowY !== 'auto');
-	}
-
-	function overflowed(e) {
-		return e.scrollWidth > e.clientWidth ||
-			e.scrollHeight > e.clientHeight;
-	}
-	
-	function scrollable(e){
-		return scrollable_style(e) && overflowed(e);
-	}
-
-	// flash scrollE for a sec
-	function flash_scroll(){
-		var oldcolor = scrollE.style.backgroundColor;
-		scrollE.scrollIntoView({behavior:"auto",block:"center",inline:"center"});
-		scrollE.style.backgroundColor = "yellow";
-		window.setTimeout(()=>{ scrollE.style.backgroundColor = oldcolor; },500);
-	}
-
 	function init_follower(newtab){
+		function generateKey(i){
+			if(i<=0) return "A";
+			var c = String.fromCharCode(65+i%26);
+			i = Math.floor(i/26);
+			if(i<=0) return c;
+			return generateKey(i) + c;
+		}
 		var doclinks = document.getElementsByTagName("A"), llen = doclinks.length,
 			links = {};
 
 		// links only contain links that are in the viewport
-		var count = 0;
+		var count = -1;
 		for(var i=0;i<llen;i++){
 			var iv = link_in_viewport(doclinks[i]);
 			if(!iv) continue;
-			links[++count] = iv;
+			var key = generateKey(++count);
+			links[key] = iv;
 		}
 		return follower("", links, newtab);
 	}
@@ -386,10 +255,10 @@
 	function follower(currstr, links, newtab){
 		// follow function
 		function followcurrstr(cs){
-			if(!(cs in links)) return firstfn;
+			if(!(cs in links)) return firstFn;
 			if(!newtab) browser_command.apply(null,["open",links[cs].href])
 			else browser_command.apply(null, ["tabnew",links[cs].href])
-			return firstfn;
+			return firstFn;
 		}
 		// unpaint
 		unfollow();
@@ -406,7 +275,7 @@
 				e = document.createElement("SPAN");
 			e.id = "follownum" + k;
 			e.className = "follownum";
-			var styletmp = {fontSize: "11px", zIndex: "10000", left: left+"px", top: top+"px", position:"absolute", backgroundColor: "yellow", "color":"red"};
+			var styletmp = {fontSize: "12px", zIndex: "10000", left: left+"px", top: top+"px", position:"absolute", backgroundColor: "yellow", "color":"red"};
 			apply_style(e, styletmp);
 			document.body.appendChild(e);
 			e.innerHTML = display;
@@ -418,19 +287,11 @@
 				return followcurrstr(currstr);
 			}
 
-			currstr = c=="Backspace"?currstr.substr(0,currstr.length-1):currstr+c;
+			currstr = c=="Backspace"?currstr.substr(0,currstr.length-1):currstr+c.toUpperCase();
 			return follower(currstr, links, newtab);
 		};
 	}
 
-	function delete_finder(){
-		if(currfind && currfind.highlighted){
-			currfind.highlighted=false;
-			browser_command("unfind");
-		}
-		removeElementsByClass("topovica_finder");
-	}
-	
 	function unfollow(){
 		removeElementsByClass("follownum");
 	}
@@ -458,81 +319,16 @@
 					return actions[c](evt);
 				}
 			} catch(e) {}
-			return firstfn;
+			return firstFn;
 		};
 	}
 
-	firstfn = chainlink({
-		// basic movements
-		"h": function(){ return move([-100,0]); }, // left
-		"j": function(){ return move([0,50]); }, // down
-		"k": function(){ return move([0,-50]); }, // up
-		"l": function(){ return move([100,0]); }, // right
-		// gt, gT, g$, g^, gg
-		"g": function(){ return gunit; },
-		// search functions
-		"/": finder,
-		"n": function() { return find_next(false); },
-		"N": function() { return find_next(true); },
-		// G
-		"G": function(){
-			var limit = Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight) - window.innerHeight;
-			return move([0,limit]);
-		},
-		// delete and undo, big down and big up
-		"d": function(){
-			if(controlled) return move([0,500]);
-			browser_command("d"); return firstfn;
-		},
-		"u": function(){
-			if(controlled) return move([0,-500]);
-			browser_command("u"); return firstfn;
-		},
-		// back and forward
-		"i": function(evt){
-			if(controlled){
-				window.history.forward();
-			}
-			return firstfn;
-		},
-		"o": function(evt){
-			if(controlled){
-				window.history.back();
-			}
-			return firstfn;
-		},
-		// link
-		"f": function(){ return init_follower(false); },
-		"F": function(){ return init_follower(true); },
-		// copy
-		"y": copy_address,
-		// refresh
-		"r": function(){ window.location.reload(true); return firstfn; },
-		"R": function(){ window.location.reload(false); return firstfn; }
+	firstFn = chainlink({
+		";": function(){ return init_follower(false); },
+		":": function(){ return init_follower(true); },
+		".": function(){ return edit(":buffer "); },
+		",": function(){ return copy_address(); }
 	});
-
-	// function dealing with "g" possible completions are "^", "$", "g", "t" and "T"
-	gunit = chainlink({
-		"g": function(){ scrollE.scrollTo(0,0); return firstfn; },
-		"e": function(){ change_scroll(false); return firstfn; },
-		"E": function(){ change_scroll(true); return firstfn; },
-		"t": function(){ browser_command("gt"); return firstfn; },
-		"T": function(){ browser_command("gT"); return firstfn; },
-		"^": function(){ browser_command("g^"); return firstfn; },
-		"$": function(){ browser_command("g$"); return firstfn; }
-	});
-	// end chain functions
-
-	// holds current command
-	var next = firstfn;
-
-	// holds undo for current keydown mod
-	var kunext = null;
-
-	function debug(){
-		if(!DEBUG) return;
-		console.log.apply(null, arguments);
-	}
 
 	// goes back to command mode
 	function uninsert(){
@@ -568,7 +364,7 @@
 		// we only react if we're in command mode
 		if(mode!=modes.command) return;
 
-		next = next(c, evt);
+		activeFn = activeFn(c, evt);
 	}
 
 	function reset(){
@@ -579,9 +375,7 @@
 		}
 		window.getSelection().removeAllRanges();
 		unfollow();
-		delete_finder();
-		next = firstfn;
-		kunext = null;
+		activeFn = firstFn;
 	}
 
 	function runku(evt, c, fn){
@@ -604,9 +398,7 @@
 		var enteredits = {
 			// input commands need to be here cos if we use keydown, the character will be output
 			// into the input box when it keyups, i.e. we will end up with "::"
-			":": function(){ edit(":"); },
-			"o": function(){ if(!controlled) edit(":open "); },
-			"b": function(){ edit(":buffer "); }
+			".": function(){ edit(":buffer "); }
 		};
 
 		if(c in mods){
@@ -659,89 +451,17 @@
 		document.execCommand("copy");
 		e.remove();
 		focused.select();
-		return firstfn;
+		return firstFn;
 	}
 
-	// takes care of search
-	function finder(){
-		var fdiv = document.createElement("DIV");
-		fdiv.className = "topovica_finder";
-		fdiv.id = "topovica_finder";
-		var styletmp = {fontSize: "11px", backgroundColor:"white", zIndex:"10000", bottom: "0", position:"fixed", width:"100%", "color":"red"};
-		apply_style(fdiv, styletmp);
-		document.body.appendChild(fdiv);
-
-		var finput = document.createElement("INPUT");
-		finput.className = "topovica_finder_input";
-		finput.value = `/`;
-		var styletmp = {fontSize: "11px", outlineStyle:"none", width:"100%", "color":"red"};
-		apply_style(finput, styletmp);
-		finput.onkeypress = function(evt){
-			var c = evt.key;
-			var iv = evt.target.value;
-			if(!iv.startsWith("/")){
-				currfind = null;
-				reset();
-				return;
-			}
-			if(c=="Enter"){
-				browser_command("find", iv.substring(1,iv.length)).then(res => {
-					currfind = {highlighted: true, ranges: []}
-					for(var rd of res.rangeData){
-						currfind.ranges.push(rd)
-					}
-					currfind.index = currfind.ranges.length-1;
-					find_next(false);
-				}, err => {
-					debug(`error in find: ${err}`);
-				});
-				reset();
-			}
-		}
-		fdiv.appendChild(finput);
-		finput.focus();
-		return firstfn;
-	}
-
-	// looks for next search result
-	function find_next(backwards){
-		if(!currfind.highlighted) return firstfn;
-		currfind.index = backwards?currfind.index-1:currfind.index+1;
-		currfind.index = modulo(currfind.index, currfind.ranges.length);
-
-		var rd = currfind.ranges[currfind.index], selection = window.getSelection(), range = document.createRange(),
-			walker = document.createTreeWalker(document, window.NodeFilter.SHOW_TEXT,null,false),
-			idx = 0;
-
-		while(idx<=rd.endTextNodePos) {
-			var n = walker.nextNode();
-			if(n==null){
-				reset();
-				return firstfn;
-			}
-
-			if(idx==rd.startTextNodePos){
-				range.setStart(n, rd.startOffset);
-				var pe = n.parentElement;
-				// scroll to selection
-				if(pe) pe.scrollIntoView({behavior:"auto",block:"center",inline:"center"});
-			}
-			if(idx==rd.endTextNodePos) {
-				range.setEnd(n, rd.endOffset);
-				selection.removeAllRanges();
-				selection.addRange(range);
-				return firstfn;
-			}
-			idx++;
-		}
-	}
-
+	activeFn = firstFn;
 	checkFocus(); // because refresh doesn't trigger focus event
 	window.addEventListener("keydown", kd, true);
 	window.addEventListener("keyup", ku, true);
 	// if this window is focused we need to check if focus is on an input element
 	window.addEventListener("focus", checkFocus);
-	// on blur, we stop checking focus
-	window.addEventListener("blur", function(){ if(fint!=null){ clearInterval(fint); fint=null; }});
+	// we stop checking focus when this windows has lost focus (blur)
+	window.addEventListener("blur", function(){
+		if(focusIntervalId!=null){ clearInterval(focusIntervalId); focusIntervalId=null; }});
 })();
 

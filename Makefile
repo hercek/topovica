@@ -1,2 +1,2 @@
-topovica.zip: src/manifest.json
-	cd src && zip -r -x\*.swp ../topovica.zip *
+FollowLink.zip: src/manifest.json
+	cd src && zip -r -x\*.swp ../FollowLink.zip *
