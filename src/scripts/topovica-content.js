@@ -324,10 +324,8 @@
 	}
 
 	firstFn = chainlink({
-		";": function(){ return init_follower(false); },
-		":": function(){ return init_follower(true); },
-		".": function(){ return edit(":buffer "); },
-		",": function(){ return copy_address(); }
+		"Pause": function(){ return init_follower(shifted); },
+		"PrintScreen": function(){ return shifted?copy_address():edit(":buffer "); },
 	});
 
 	// goes back to command mode
@@ -398,7 +396,7 @@
 		var enteredits = {
 			// input commands need to be here cos if we use keydown, the character will be output
 			// into the input box when it keyups, i.e. we will end up with "::"
-			".": function(){ edit(":buffer "); }
+			"PrintScreen": function(){ if (!shifted) edit(":buffer "); }
 		};
 
 		if(c in mods){
